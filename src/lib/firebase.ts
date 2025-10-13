@@ -4,15 +4,19 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
-// Replace these values with your Firebase project credentials
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+
+  apiKey: "AIzaSyAe_LD5kViCT-Lth5HAUOAFnn6ZuJ5QRjc",
+  authDomain: "farm-assist-eb43d.firebaseapp.com",
+  projectId: "farm-assist-eb43d",
+  storageBucket: "farm-assist-eb43d.firebasestorage.app",
+  messagingSenderId: "939036075395",
+  appId: "1:939036075395:web:ca4627962cf52bba0d82b6",
+  measurementId: "G-NZ29LCYHM0"
+
 };
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

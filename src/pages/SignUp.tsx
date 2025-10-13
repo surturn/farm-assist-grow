@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +10,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "sonner";
 import { Sprout, Loader2 } from "lucide-react";
 import { z } from "zod";
-
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { UserCredential } from "firebase/auth";
+import { useEffect } from "react";
 const KENYA_REGIONS = [
   "Eastern Kenya",
   "Western Kenya",
@@ -38,10 +42,12 @@ const SignUp = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Redirect if already logged in
-  if (user) {
-    navigate("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+      return null;
+    }
+  }, [user, navigate]);
 
   const handlePhoneChange = (value: string) => {
     // Always keep +254 prefix
@@ -77,13 +83,29 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      await signUp(email, password);
-      // Note: In a real app, you'd save name, phone, and location to Firestore
-      toast.success("Account Created!", {
-        description: "Welcome to Farm-Assist. Your account has been created successfully.",
-      });
-      navigate("/dashboard");
-    } catch (error: any) {
+      const userCredential: UserCredential = await signUp(email, password);
+      const user = userCredential.user;
+
+            // Store user info in Firestore
+            await setDoc(doc(db, "users", user.uid), {
+              full_name: name,
+              phone,
+              location,
+              email,
+              created_at: serverTimestamp(),
+            });
+
+            toast.success("Account Created!", {
+              description: "Welcome to Farm-Assist. Your account has been created successfully.",
+            });
+            navigate("/dashboard");
+
+                  toast.success("Account Created!", {
+                    description: "Welcome to Farm-Assist. Your account has been created successfully.",
+                  });
+                  navigate("/dashboard");
+    } 
+    catch (error: any) {
       let errorMessage = "Failed to create account. Please try again.";
       
       if (error.code === "auth/email-already-in-use") {
