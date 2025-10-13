@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sprout } from "lucide-react";
 import heroImage from "@/assets/hero-farm.jpg";
@@ -36,20 +37,24 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-            <Button 
-              size="lg" 
-              className="bg-white text-primary hover:bg-white/90 shadow-medium transition-all duration-300 hover:scale-105 group"
-            >
-              Get Started
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-2 border-white text-white hover:bg-white hover:text-primary transition-all duration-300"
-            >
-              Learn More
-            </Button>
+            <Link to="/signup">
+              <Button 
+                size="lg" 
+                className="bg-white text-primary hover:bg-white/90 shadow-medium transition-all duration-300 hover:scale-105 group"
+              >
+                Get Started
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-2 border-white text-white hover:bg-white hover:text-primary transition-all duration-300"
+              >
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
