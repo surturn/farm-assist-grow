@@ -1,14 +1,13 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Sprout, LogOut, BarChart3, Cloud, TrendingUp } from "lucide-react";
+import { Sprout, TrendingUp, MapPin, AlertCircle } from "lucide-react";
 
-const Dashboard = () => {
+export default function Dashboard() {
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { user, logout, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -16,29 +15,8 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success("Logged Out", {
-        description: "You've been successfully logged out.",
-      });
-      navigate("/");
-    } catch (error) {
-      toast.error("Logout Failed", {
-        description: "Failed to logout. Please try again.",
-      });
-    }
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Sprout className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   if (!user) {
@@ -46,129 +24,67 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header */}
-      <header className="bg-white border-b border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Sprout className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Farm-Assist</h1>
-                <p className="text-sm text-muted-foreground">Dashboard</p>
-              </div>
-            </div>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">
-            Welcome back!
-          </h2>
-          <p className="text-muted-foreground">
-            {user.email}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="hover:shadow-medium transition-all duration-300">
-            <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
-              <CardTitle>Crop Analytics</CardTitle>
-              <CardDescription>
-                Monitor your crop health and yields
-              </CardDescription>
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Farms</CardTitle>
+              <MapPin className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
-                View Analytics
-              </Button>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">No farms added yet</p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-medium transition-all duration-300">
-            <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary to-accent flex items-center justify-center mb-4">
-                <Cloud className="w-6 h-6 text-white" />
-              </div>
-              <CardTitle>Weather Data</CardTitle>
-              <CardDescription>
-                Real-time weather updates for your farm
-              </CardDescription>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Crops</CardTitle>
+              <Sprout className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
-                Check Weather
-              </Button>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">Start planting soon</p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-medium transition-all duration-300">
-            <CardHeader>
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-primary flex items-center justify-center mb-4">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <CardTitle>Market Insights</CardTitle>
-              <CardDescription>
-                Latest market prices and trends
-              </CardDescription>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Trees Tracked</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
-                View Markets
-              </Button>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">Begin tree tracking</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Alerts</CardTitle>
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">0</div>
+              <p className="text-xs text-muted-foreground">All clear</p>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="mt-8 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Getting Started</CardTitle>
-            <CardDescription>
-              Complete your profile to unlock all features
-            </CardDescription>
+            <CardTitle>Welcome to Farm-Assist!</CardTitle>
+            <CardDescription>Get started by exploring the features</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                <p className="text-sm text-muted-foreground">
-                  Add your farm details and crop information
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                <p className="text-sm text-muted-foreground">
-                  Set up weather alerts for your location
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                <p className="text-sm text-muted-foreground">
-                  Connect with local agricultural experts
-                </p>
-              </div>
-            </div>
+            <p className="text-muted-foreground">
+              Your farming intelligence platform is ready. Use the sidebar to navigate to different sections
+              and start managing your farms efficiently.
+            </p>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
-};
-
-export default Dashboard;
+}

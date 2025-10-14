@@ -45,7 +45,6 @@ const SignUp = () => {
   useEffect(() => {
     if (user) {
       navigate("/dashboard");
-      return null;
     }
   }, [user, navigate]);
 
@@ -83,28 +82,23 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      const userCredential: UserCredential = await signUp(email, password);
+      const userCredential = await signUp(email, password);
       const user = userCredential.user;
 
-            // Store user info in Firestore
-            await setDoc(doc(db, "users", user.uid), {
-              full_name: name,
-              phone,
-              location,
-              email,
-              created_at: serverTimestamp(),
-            });
+      // Store user info in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        full_name: name,
+        phone,
+        location,
+        email,
+        created_at: serverTimestamp(),
+      });
 
-            toast.success("Account Created!", {
-              description: "Welcome to Farm-Assist. Your account has been created successfully.",
-            });
-            navigate("/dashboard");
-
-                  toast.success("Account Created!", {
-                    description: "Welcome to Farm-Assist. Your account has been created successfully.",
-                  });
-                  navigate("/dashboard");
-    } 
+      toast.success("Account Created!", {
+        description: "Welcome to Farm-Assist. Your account has been created successfully.",
+      });
+      navigate("/dashboard");
+    }
     catch (error: any) {
       let errorMessage = "Failed to create account. Please try again.";
       
