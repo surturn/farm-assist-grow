@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Home, Camera, Map, Calendar, TreeDeciduous, Settings, Star, Bell, Search, Menu, Sprout, LogOut, User } from "lucide-react";
+import { Home, Camera, Map, Calendar, TreeDeciduous, Settings, Star, Bell, Search, Sprout, LogOut, User } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -137,11 +137,7 @@ function DashboardHeader() {
   return (
     <header className="h-16 border-b bg-background px-4 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-4 flex-1">
-        <SidebarTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SidebarTrigger>
+        <SidebarTrigger className="md:hidden" />
         <h1 className="text-xl font-semibold text-foreground">{getPageTitle()}</h1>
       </div>
 
