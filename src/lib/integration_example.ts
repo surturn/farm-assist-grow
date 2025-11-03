@@ -3,8 +3,8 @@
  * in your Scan component
  */
 
-import { processImageUpload } from './imageUploadUtil';
-import { analyzeCropImage, VisionAPIConfig } from './openaiVisionAPI';
+import { processImageUpload } from './image_upload_util';
+import { analyzeCropImage, VisionAPIConfig } from './openai_vision_api';
 
 // 1. Configuration
 const VISION_API_CONFIG: VisionAPIConfig = {

@@ -8,6 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+// Import the utility functions
+import { processImageUpload } from "@/lib/image_upload_util";
+import { analyzeCropImage } from "@/lib/openai_vision_api";
 
 interface AnalysisResult {
   diseaseName: string;
@@ -61,15 +64,47 @@ export default function Scan() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // UPDATED: Handle file selection with validation and processing
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
-        setResult(null);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      // Process and validate the image
+      const uploadResult = await processImageUpload(file, {
+        maxSizeInMB: 10,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        quality: 0.9,
+        acceptedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+      });
+
+      if (!uploadResult.success) {
+        toast({
+          title: "Upload Error",
+          description: uploadResult.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Set the processed image
+      setSelectedImage(uploadResult.data!);
+      setResult(null);
+
+      // Show success toast with image info
+      if (uploadResult.metadata) {
+        toast({
+          title: "Image uploaded successfully",
+          description: `Size: ${(uploadResult.metadata.fileSize / 1024).toFixed(0)}KB, ${uploadResult.metadata.dimensions?.width}x${uploadResult.metadata.dimensions?.height}px`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process image. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -80,54 +115,144 @@ export default function Scan() {
     });
   };
 
+  // ENHANCED: Real API integration with detailed error logging
   const handleAnalyze = async () => {
     if (!selectedImage) return;
 
     setIsAnalyzing(true);
     setProgress(0);
 
-    // Simulate progress
-    const interval = setInterval(() => {
+    // Progress simulation
+    const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 90) {
-          clearInterval(interval);
+          clearInterval(progressInterval);
           return 90;
         }
         return prev + 10;
       });
-    }, 200);
+    }, 300);
 
-    // Simulate API call
-    setTimeout(() => {
-      clearInterval(interval);
+    try {
+      console.log('Starting analysis...');
+      console.log('Image size:', selectedImage.length, 'characters');
+      console.log('Farm ID:', selectedFarm || 'none');
+
+      // Server-side API route (RECOMMENDED - keeps API key secure)
+      const response = await fetch('/api/analyze-crop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageBase64: selectedImage,
+          farmId: selectedFarm || undefined,
+        }),
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      clearInterval(progressInterval);
       setProgress(100);
-      
-      // Mock result
-      const mockResult: AnalysisResult = {
-        diseaseName: "Late Blight (Phytophthora infestans)",
-        confidence: 87,
-        cropType: "Tomato",
-        severity: "Moderate",
-        symptoms: [
-          "Dark brown spots on leaves with white mold on undersides",
-          "Rapid spreading during wet conditions",
-          "Lesions on stems and fruits",
-          "Leaves eventually turn brown and die",
-        ],
-        treatment: "Apply fungicides containing chlorothalonil or copper-based compounds. Remove and destroy infected plants. Improve air circulation and avoid overhead watering.",
-        prevention: [
-          "Plant resistant varieties when possible",
-          "Space plants properly for air circulation",
-          "Water at soil level, not overhead",
-          "Remove plant debris after harvest",
-          "Rotate crops yearly",
-        ],
-      };
 
-      setResult(mockResult);
+      // Get response text
+      const rawText = await response.text().catch(() => '');
+      console.log('Raw response:', rawText.substring(0, 500)); // Log first 500 chars
+
+      if (!response.ok) {
+        let errorMessage = 'Analysis failed';
+        let errorDetails = '';
+
+        try {
+          const parsed = rawText ? JSON.parse(rawText) : null;
+          errorMessage = parsed?.error || parsed?.message || errorMessage;
+          errorDetails = parsed?.details || '';
+          
+          console.error('API Error:', errorMessage);
+          console.error('Error Details:', errorDetails);
+
+          // Check for common OpenAI errors
+          if (errorDetails.includes('insufficient_quota') || errorDetails.includes('quota')) {
+            errorMessage = 'Insufficient API credits. Please add funds to your OpenAI account.';
+          } else if (errorDetails.includes('invalid_api_key') || errorDetails.includes('api_key')) {
+            errorMessage = 'Invalid API key. Please check your OpenAI API key configuration.';
+          } else if (errorDetails.includes('rate_limit')) {
+            errorMessage = 'Rate limit exceeded. Please try again in a few moments.';
+          } else if (errorDetails.includes('model_not_found')) {
+            errorMessage = 'Model not available. Your API key may not have access to GPT-4 Vision.';
+          }
+        } catch (e) {
+          errorMessage = rawText || errorMessage;
+          console.error('Failed to parse error response:', e);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      if (!rawText) {
+        throw new Error('Empty response from analysis service');
+      }
+
+      let data: AnalysisResult;
+      try {
+        data = JSON.parse(rawText);
+        console.log('Parsed analysis result:', data);
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        throw new Error('Invalid JSON returned from analysis service');
+      }
+
+      // Validate the response structure
+      if (!data.diseaseName || !data.cropType) {
+        console.error('Invalid response structure:', data);
+        throw new Error('Invalid response format from analysis service');
+      }
+
+      // Set the result from API
+      setResult(data);
+
+      toast({
+        title: "Analysis Complete",
+        description: `Detected: ${data.diseaseName}`,
+      });
+
+      console.log('Analysis successful!');
+    } catch (error) {
+      clearInterval(progressInterval);
+      
+      console.error('=== ANALYSIS ERROR ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      
+      if (error instanceof Error) {
+        console.error('Error stack:', error.stack);
+      }
+      console.error('======================');
+
+      // Determine user-friendly error message
+      let userMessage = "Please try again later";
+      
+      if (error instanceof Error) {
+        userMessage = error.message;
+        
+        // Additional helpful messages
+        if (error.message.includes('fetch')) {
+          userMessage = 'Network error. Please check your internet connection and ensure the server is running.';
+        } else if (error.message.includes('quota') || error.message.includes('credits')) {
+          userMessage = 'Insufficient API credits. Please add funds to your OpenAI account at platform.openai.com/account/billing';
+        }
+      }
+
+      toast({
+        title: "Analysis Failed",
+        description: userMessage,
+        variant: "destructive",
+      });
+    } finally {
       setIsAnalyzing(false);
       setProgress(0);
-    }, 2000);
+    }
   };
 
   const handleRemoveImage = () => {

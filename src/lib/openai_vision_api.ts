@@ -20,18 +20,26 @@ export interface VisionAPIConfig {
   temperature?: number;
 }
 
-export interface VisionAPIError {
-  success: false;
-  error: string;
-  details?: string;
-}
-
 export interface VisionAPISuccess {
   success: true;
-  data: CropDiseaseAnalysis;
+  data: {
+    diseaseName: string;
+    confidence: number;
+    cropType: string;
+    severity: "Mild" | "Moderate" | "Severe";
+    symptoms: string[];
+    treatment: string;
+    prevention: string[];
+  };
 }
 
-export type VisionAPIResponse = VisionAPISuccess | VisionAPIError;
+export interface VisionAPIFailure {
+  success: false;
+  error: string;
+  details?: unknown;
+}
+
+export type VisionAPIResponse = VisionAPISuccess | VisionAPIFailure;
 
 const DEFAULT_CONFIG = {
   model: 'gpt-4o', // or 'gpt-4-turbo' or 'gpt-4-vision-preview'
