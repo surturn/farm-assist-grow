@@ -2,7 +2,6 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { analyzeCropImage } from './src/lib/openai_vision_api.ts';
 
 dotenv.config();
 
@@ -52,31 +51,110 @@ async function startServer() {
       }
 
       console.log('Starting crop analysis...');
+      console.log('Farm ID:', farmId || 'none');
       
-      const result = await analyzeCropImage(imageBase64, {
-        apiKey,
-        model: 'gpt-4o',
-        maxTokens: 1500,
-        temperature: 0.2,
+      // Direct OpenAI API call
+      const systemPrompt = `You are an expert agricultural pathologist specializing in crop disease detection. 
+Analyze the provided crop image and provide a detailed disease assessment in JSON format.
+
+Your response MUST be a valid JSON object with exactly this structure:
+{
+  "diseaseName": "Full disease name (including scientific name if applicable)",
+  "confidence": number between 0-100,
+  "cropType": "Type of crop identified",
+  "severity": "Mild" | "Moderate" | "Severe",
+  "symptoms": ["symptom1", "symptom2", "symptom3"],
+  "treatment": "Detailed treatment recommendations",
+  "prevention": ["prevention1", "prevention2", "prevention3"]
+}
+
+Guidelines:
+- Be precise and use proper agricultural/botanical terminology
+- Confidence should reflect your certainty about the diagnosis
+- Include 3-5 specific symptoms you observe
+- Treatment should be practical and actionable
+- Prevention measures should be preventive, not reactive
+- If no disease is detected, indicate "Healthy" as diseaseName with appropriate messaging`;
+
+      const userPrompt = `Please analyze this crop image for any diseases or health issues. Provide your assessment in the JSON format specified.`;
+
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: userPrompt,
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: imageBase64,
+                    detail: 'high',
+                  },
+                },
+              ],
+            },
+          ],
+          max_tokens: 1500,
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+        }),
       });
 
-      if (!result.success) {
-        console.error('Vision API error:', result.error, result.details);
+      if (!openaiResponse.ok) {
+        const errorData = await openaiResponse.json().catch(() => ({}));
+        console.error('OpenAI API error:', errorData);
         return res.status(500).json({
-          error: result.error,
-          details: result.details,
+          error: `OpenAI API request failed with status ${openaiResponse.status}`,
+          details: errorData.error?.message || JSON.stringify(errorData),
+        });
+      }
+
+      const data = await openaiResponse.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        console.error('No content in OpenAI response:', data);
+        return res.status(500).json({
+          error: 'No content in API response',
+          details: JSON.stringify(data),
+        });
+      }
+
+      // Parse the JSON response
+      let result;
+      try {
+        result = JSON.parse(content);
+      } catch (parseError) {
+        console.error('Failed to parse OpenAI response:', content);
+        return res.status(500).json({
+          error: 'Failed to parse API response',
+          details: content,
         });
       }
 
       console.log('Analysis completed:', {
-        diseaseName: result.data.diseaseName,
-        confidence: result.data.confidence,
-        cropType: result.data.cropType,
+        diseaseName: result.diseaseName,
+        confidence: result.confidence,
+        cropType: result.cropType,
         farmId: farmId || 'none',
         timestamp: new Date().toISOString(),
       });
 
-      return res.status(200).json(result.data);
+      return res.status(200).json(result);
     } catch (error) {
       console.error('Unexpected error in /api/analyze-crop:', error);
       return res.status(500).json({
@@ -102,8 +180,8 @@ async function startServer() {
   const PORT = process.env.PORT || 5173;
   app.listen(PORT, () => {
     console.log('\nServer running on http://localhost:' + PORT);
-    console.log('API endpoint: http://localhost:' + PORT + '/api/analyze-crop');
-    console.log('Crop disease detection ready\n');
+    console.log(' API endpoint: http://localhost:' + PORT + '/api/analyze-crop');
+    console.log(' Crop disease detection ready\n');
   });
 
   // Process-level error handlers
