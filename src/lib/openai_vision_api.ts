@@ -14,7 +14,7 @@ export interface CropDiseaseAnalysis {
 }
 
 export interface VisionAPIConfig {
-  apiKey: string;
+  apiKey?: string;
   model?: string;
   maxTokens?: number;
   temperature?: number;
@@ -52,17 +52,10 @@ const DEFAULT_CONFIG = {
  */
 export async function analyzeCropImage(
   imageBase64: string,
-  config: VisionAPIConfig
+  config: VisionAPIConfig = DEFAULT_CONFIG
 ): Promise<VisionAPIResponse> {
-  const { apiKey, model, maxTokens, temperature } = { ...DEFAULT_CONFIG, ...config };
-
-  // Validate inputs
-  if (!apiKey) {
-    return {
-      success: false,
-      error: 'API key is required',
-    };
-  }
+  // Config is technically unused in the frontend now as the backend handles it,
+  // but we keep the signature for compatibility or if we want to pass opts to backend later.
 
   if (!imageBase64) {
     return {
@@ -71,120 +64,50 @@ export async function analyzeCropImage(
     };
   }
 
-  // Prepare the prompt
-  const systemPrompt = `You are an expert agricultural pathologist specializing in crop disease detection. 
-Analyze the provided crop image and provide a detailed disease assessment in JSON format.
-
-Your response MUST be a valid JSON object with exactly this structure:
-{
-  "diseaseName": "Full disease name (including scientific name if applicable)",
-  "confidence": number between 0-100,
-  "cropType": "Type of crop identified",
-  "severity": "Mild" | "Moderate" | "Severe",
-  "symptoms": ["symptom1", "symptom2", "symptom3"],
-  "treatment": "Detailed treatment recommendations",
-  "prevention": ["prevention1", "prevention2", "prevention3"]
-}
-
-Guidelines:
-- Be precise and use proper agricultural/botanical terminology
-- Confidence should reflect your certainty about the diagnosis
-- Include 3-5 specific symptoms you observe
-- Treatment should be practical and actionable
-- Prevention measures should be preventive, not reactive
-- If no disease is detected, indicate "Healthy" as diseaseName with appropriate messaging`;
-
-  const userPrompt = `Please analyze this crop image for any diseases or health issues. Provide your assessment in the JSON format specified.`;
-
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('/api/analyze-crop', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: userPrompt,
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageBase64,
-                  detail: 'high', // 'low', 'high', or 'auto'
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: maxTokens,
-        temperature,
-        response_format: { type: 'json_object' }, // Ensures JSON response
+        imageBase64,
+        // We could pass farmId here if extended
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorText = await response.text();
+      let errorMessage = `API request failed with status ${response.status}`;
+      let errorDetails = errorText;
+
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error || errorMessage;
+        errorDetails = errorJson.details || errorDetails;
+      } catch (e) {
+        // content was not json
+      }
+
       return {
         success: false,
-        error: `API request failed with status ${response.status}`,
-        details: errorData.error?.message || JSON.stringify(errorData),
+        error: errorMessage,
+        details: errorDetails
       };
     }
 
     const data = await response.json();
-    
-    // Extract the response content
-    const content = data.choices?.[0]?.message?.content;
-    
-    if (!content) {
-      return {
-        success: false,
-        error: 'No content in API response',
-        details: JSON.stringify(data),
-      };
-    }
 
-    // Parse the JSON response
-    let analysisResult: CropDiseaseAnalysis;
-    try {
-      analysisResult = JSON.parse(content);
-    } catch (parseError) {
-      return {
-        success: false,
-        error: 'Failed to parse API response',
-        details: content,
-      };
-    }
-
-    // Validate the response structure
-    const validationError = validateAnalysisResult(analysisResult);
-    if (validationError) {
-      return {
-        success: false,
-        error: 'Invalid response structure from API',
-        details: validationError,
-      };
-    }
-
+    // The backend now returns the parsed JSON directly
     return {
       success: true,
-      data: analysisResult,
+      data: data as CropDiseaseAnalysis,
     };
+
   } catch (error) {
     return {
       success: false,
-      error: 'Network or API error',
+      error: 'Network error',
       details: error instanceof Error ? error.message : 'Unknown error',
     };
   }
@@ -265,8 +188,8 @@ export function estimateAPICost(imageCount: number, resolution: 'low' | 'high' =
   const baseCostPerRequest = 0.01; // Base text cost
   const imageCostLow = 0.00425; // Low detail image
   const imageCostHigh = 0.00765; // High detail image (512px tiles)
-  
+
   const imageCost = resolution === 'low' ? imageCostLow : imageCostHigh;
-  
+
   return imageCount * (baseCostPerRequest + imageCost);
 }

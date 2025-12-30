@@ -1,9 +1,12 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
+import { createServer as createViteServer, loadEnv } from 'vite';
 import dotenv from 'dotenv';
 import cors from 'cors';
 
-dotenv.config();
+// Load env vars using Vite's mechanism to ensure .env.local is respected
+const mode = process.env.NODE_ENV || 'development';
+const env = loadEnv(mode, process.cwd(), ''); // '' means load all envs, not just VITE_
+Object.assign(process.env, env);
 
 async function startServer() {
   const app = express();
@@ -52,7 +55,7 @@ async function startServer() {
 
       console.log('Starting crop analysis...');
       console.log('Farm ID:', farmId || 'none');
-      
+
       // Direct OpenAI API call
       const systemPrompt = `You are an expert agricultural pathologist specializing in crop disease detection. 
 Analyze the provided crop image and provide a detailed disease assessment in JSON format.
@@ -164,9 +167,87 @@ Guidelines:
     }
   });
 
+  // ... existing endpoint ...
+
+  /**
+   * Crop Planning API
+   * POST /api/generate-crop-plan
+   */
+  app.post('/api/generate-crop-plan', async (req, res) => {
+    try {
+      const { crops, weather, location } = req.body;
+
+      if (!crops || !Array.isArray(crops) || crops.length === 0) {
+        return res.status(400).json({ error: 'List of crops is required' });
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'Server configuration error' });
+      }
+
+      console.log('Generating crop plan for:', { location, cropsCount: crops.length });
+
+      const systemPrompt = `You are an expert agricultural consultant.
+Based on the provided location and current weather conditions, create a detailed farming schedule for the specified crops.
+
+Response format MUST be a JSON object:
+{
+  "plan": [
+    {
+      "crop": "Crop Name",
+      "suitability": "High/Medium/Low",
+      "reason": "Brief explanation based on weather",
+      "schedule": [
+        { "phase": "Preparation", "timing": "Week X-Y", "activity": "Detail..." },
+        { "phase": "Planting", "timing": "Week X-Y", "activity": "Detail..." },
+        { "phase": "Care", "timing": "Week X-Y", "activity": "Detail..." },
+        { "phase": "Harvest", "timing": "Week X-Y", "activity": "Detail..." }
+      ],
+      "tips": ["Tip 1", "Tip 2"]
+    }
+  ],
+  "generalAdvice": "Overall advice for this season/weather"
+}`;
+
+      const userPrompt = `Location: ${location}
+Weather Context: ${JSON.stringify(weather)}
+Crops to Plan: ${crops.join(', ')}
+
+Please provide a farming schedule and advice.`;
+
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+
+      const data = await openaiResponse.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) throw new Error('No content from OpenAI');
+
+      res.status(200).json(JSON.parse(content));
+
+    } catch (error) {
+      console.error('Plan generation failed:', error);
+      res.status(500).json({ error: 'Failed to generate plan' });
+    }
+  });
+
   // Initialize Vite in middleware mode BEFORE starting the server
   const vite = await createViteServer({
-    server: { 
+    server: {
       middlewareMode: true,
       port: 5173
     },
@@ -188,7 +269,7 @@ Guidelines:
   process.on('unhandledRejection', (reason) => {
     console.error('Unhandled Rejection:', reason);
   });
-  
+
   process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
     process.exit(1);

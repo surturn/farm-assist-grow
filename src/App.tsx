@@ -14,6 +14,7 @@ import Farms from "./pages/Farms";
 import Planning from "./pages/Planning";
 import Trees from "./pages/Trees";
 import Settings from "./pages/Settings";
+import Notifications from "./pages/Notifications";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/planning" element={<Planning />} />
             <Route path="/trees" element={<Trees />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/subscription" element={<Subscription />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

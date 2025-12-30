@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 // Import the utility functions
 import { processImageUpload } from "@/lib/image_upload_util";
 import { analyzeCropImage } from "@/lib/openai_vision_api";
+import CameraCapture from "@/components/CameraCapture";
 
 interface AnalysisResult {
   diseaseName: string;
@@ -34,6 +36,7 @@ interface ScanHistory {
 export default function Scan() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [selectedFarm, setSelectedFarm] = useState<string>("");
@@ -109,9 +112,16 @@ export default function Scan() {
   };
 
   const handleTakePhoto = () => {
+    setShowCamera(true);
+  };
+
+  const handleCameraCapture = (imageSrc: string) => {
+    setSelectedImage(imageSrc);
+    setResult(null);
+    setShowCamera(false);
     toast({
-      title: "Camera feature",
-      description: "Camera access coming soon. Please upload a photo for now.",
+      title: "Photo Captured",
+      description: "Image ready for analysis.",
     });
   };
 
@@ -135,113 +145,42 @@ export default function Scan() {
 
     try {
       console.log('Starting analysis...');
-      console.log('Image size:', selectedImage.length, 'characters');
-      console.log('Farm ID:', selectedFarm || 'none');
 
-      // Server-side API route (RECOMMENDED - keeps API key secure)
-      const response = await fetch('/api/analyze-crop', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64: selectedImage,
-          farmId: selectedFarm || undefined,
-        }),
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+      const response = await analyzeCropImage(selectedImage, { apiKey: '' }); // apiKey ignored by new implementation
 
       clearInterval(progressInterval);
       setProgress(100);
 
-      // Get response text
-      const rawText = await response.text().catch(() => '');
-      console.log('Raw response:', rawText.substring(0, 500)); // Log first 500 chars
+      if (!response.success) {
+        const err = response as { error?: string };
+        throw new Error(err.error || 'Analysis failed');
+      }
 
-      if (!response.ok) {
-        let errorMessage = 'Analysis failed';
-        let errorDetails = '';
-
-        try {
-          const parsed = rawText ? JSON.parse(rawText) : null;
-          errorMessage = parsed?.error || parsed?.message || errorMessage;
-          errorDetails = parsed?.details || '';
-          
-          console.error('API Error:', errorMessage);
-          console.error('Error Details:', errorDetails);
-
-          // Check for common OpenAI errors
-          if (errorDetails.includes('insufficient_quota') || errorDetails.includes('quota')) {
-            errorMessage = 'Insufficient API credits. Please add funds to your OpenAI account.';
-          } else if (errorDetails.includes('invalid_api_key') || errorDetails.includes('api_key')) {
-            errorMessage = 'Invalid API key. Please check your OpenAI API key configuration.';
-          } else if (errorDetails.includes('rate_limit')) {
-            errorMessage = 'Rate limit exceeded. Please try again in a few moments.';
-          } else if (errorDetails.includes('model_not_found')) {
-            errorMessage = 'Model not available. Your API key may not have access to GPT-4 Vision.';
-          }
-        } catch (e) {
-          errorMessage = rawText || errorMessage;
-          console.error('Failed to parse error response:', e);
+      // Check success explicitely to make TS happy
+      if (response.success) {
+        if (!response.data) {
+          throw new Error('No data received');
         }
+        const data = response.data;
+        setResult(data);
 
-        throw new Error(errorMessage);
+        toast({
+          title: "Analysis Complete",
+          description: `Detected: ${data.diseaseName}`,
+        });
       }
-
-      if (!rawText) {
-        throw new Error('Empty response from analysis service');
-      }
-
-      let data: AnalysisResult;
-      try {
-        data = JSON.parse(rawText);
-        console.log('Parsed analysis result:', data);
-      } catch (e) {
-        console.error('JSON parse error:', e);
-        throw new Error('Invalid JSON returned from analysis service');
-      }
-
-      // Validate the response structure
-      if (!data.diseaseName || !data.cropType) {
-        console.error('Invalid response structure:', data);
-        throw new Error('Invalid response format from analysis service');
-      }
-
-      // Set the result from API
-      setResult(data);
-
-      toast({
-        title: "Analysis Complete",
-        description: `Detected: ${data.diseaseName}`,
-      });
 
       console.log('Analysis successful!');
+
     } catch (error) {
       clearInterval(progressInterval);
-      
-      console.error('=== ANALYSIS ERROR ===');
-      console.error('Error type:', error?.constructor?.name);
-      console.error('Error message:', error instanceof Error ? error.message : String(error));
-      
-      if (error instanceof Error) {
-        console.error('Error stack:', error.stack);
-      }
-      console.error('======================');
 
-      // Determine user-friendly error message
+      console.error('=== ANALYSIS ERROR ===', error);
+
       let userMessage = "Please try again later";
-      
+
       if (error instanceof Error) {
         userMessage = error.message;
-        
-        // Additional helpful messages
-        if (error.message.includes('fetch')) {
-          userMessage = 'Network error. Please check your internet connection and ensure the server is running.';
-        } else if (error.message.includes('quota') || error.message.includes('credits')) {
-          userMessage = 'Insufficient API credits. Please add funds to your OpenAI account at platform.openai.com/account/billing';
-        }
       }
 
       toast({
@@ -291,7 +230,7 @@ export default function Scan() {
 
   const handleSaveToHistory = () => {
     if (!result || !selectedImage) return;
-    
+
     const newScan: ScanHistory = {
       id: Date.now().toString(),
       image: selectedImage,
@@ -300,7 +239,7 @@ export default function Scan() {
       date: new Date().toISOString().split("T")[0],
       confidence: result.confidence,
     };
-    
+
     setScanHistory([newScan, ...scanHistory]);
     toast({
       title: "Saved to history",
@@ -590,6 +529,19 @@ export default function Scan() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Camera Dialog */}
+      <Dialog open={showCamera} onOpenChange={setShowCamera}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Take Photo</DialogTitle>
+          </DialogHeader>
+          <CameraCapture
+            onCapture={handleCameraCapture}
+            onCancel={() => setShowCamera(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

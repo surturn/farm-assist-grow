@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Home, Camera, Map, Calendar, TreeDeciduous, Settings, Star, Bell, Search, Sprout, LogOut, User } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import {
   Sidebar,
   SidebarContent,
@@ -27,13 +28,13 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-const navigationItems = [
-  { label: "Dashboard", icon: Home, route: "/dashboard" },
-  { label: "Scan Crop", icon: Camera, route: "/scan" },
-  { label: "My Farms", icon: Map, route: "/farms" },
-  { label: "Crop Planning", icon: Calendar, route: "/planning" },
-  { label: "Tree Tracking", icon: TreeDeciduous, route: "/trees" },
-  { label: "Settings", icon: Settings, route: "/settings" },
+const getNavigationItems = (t: any) => [
+  { label: t('nav.dashboard'), icon: Home, route: "/dashboard" },
+  { label: t('nav.scan'), icon: Camera, route: "/scan" },
+  { label: t('nav.farms'), icon: Map, route: "/farms" },
+  { label: t('nav.planning'), icon: Calendar, route: "/planning" },
+  { label: t('nav.trees'), icon: TreeDeciduous, route: "/trees" },
+  { label: t('nav.settings'), icon: Settings, route: "/settings" },
 ];
 
 const bottomItems = [
@@ -43,7 +44,10 @@ const bottomItems = [
 function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const { t } = useTranslation();
   const collapsed = state === "collapsed";
+
+  const navigationItems = getNavigationItems(t);
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
@@ -62,13 +66,12 @@ function AppSidebar() {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.route;
                 return (
-                  <SidebarMenuItem key={item.label}>
+                  <SidebarMenuItem key={item.route}>
                     <SidebarMenuButton asChild>
                       <NavLink
                         to={item.route}
-                        className={`flex items-center gap-3 px-4 py-2 text-primary-foreground hover:bg-primary/80 transition-colors ${
-                          isActive ? "bg-primary/60 border-l-4 border-accent" : ""
-                        }`}
+                        className={`flex items-center gap-3 px-4 py-2 text-primary-foreground hover:bg-primary/80 transition-colors ${isActive ? "bg-primary/60 border-l-4 border-accent" : ""
+                          }`}
                       >
                         <Icon className="h-5 w-5" />
                         {!collapsed && <span>{item.label}</span>}
@@ -92,9 +95,8 @@ function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <NavLink
                         to={item.route}
-                        className={`flex items-center gap-3 px-4 py-2 text-primary-foreground hover:bg-accent/20 transition-colors ${
-                          item.highlight ? "bg-accent/30 font-medium" : ""
-                        }`}
+                        className={`flex items-center gap-3 px-4 py-2 text-primary-foreground hover:bg-accent/20 transition-colors ${item.highlight ? "bg-accent/30 font-medium" : ""
+                          }`}
                       >
                         <Icon className="h-5 w-5" />
                         {!collapsed && <span>{item.label}</span>}
@@ -111,14 +113,39 @@ function AppSidebar() {
   );
 }
 
+import { Link } from "react-router-dom";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useState, useEffect } from "react";
+
 function DashboardHeader() {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, "notifications"),
+      where("userId", "==", user.uid),
+      where("read", "==", false)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const getPageTitle = () => {
     const route = location.pathname;
+    const navigationItems = getNavigationItems(t);
     const item = [...navigationItems, ...bottomItems].find((i) => i.route === route);
+    if (route === "/notifications") return "Notifications";
     return item?.label || "Dashboard";
   };
 
@@ -147,11 +174,15 @@ function DashboardHeader() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground">
-            3
-          </Badge>
+        <Button variant="ghost" size="icon" className="relative" asChild>
+          <Link to="/notifications">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground animate-in zoom-in">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </Link>
         </Button>
 
         <DropdownMenu>
@@ -168,16 +199,20 @@ function DashboardHeader() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+            <DropdownMenuItem asChild>
+              <Link to="/settings" className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
+            <DropdownMenuItem asChild>
+              <Link to="/settings" className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
