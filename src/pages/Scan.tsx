@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Camera, Upload, X, Loader2, AlertCircle, CheckCircle2, Share2, Bookmark, ChevronDown, ChevronUp, Leaf, Sprout } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Camera, Upload, X, Loader2, AlertCircle, CheckCircle2, Share2, Bookmark, ChevronDown, ChevronUp, Leaf, Sprout, ShoppingBag, ExternalLink } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
+
 // Import the utility functions
 import { processImageUpload } from "@/lib/image_upload_util";
 import { analyzeCropImage } from "@/lib/openai_vision_api";
 import CameraCapture from "@/components/CameraCapture";
+import { seedDiseases, getAllDiseases, DiseaseData } from "@/lib/disease_fallback";
+import { collection, query, where, orderBy, onSnapshot, addDoc, Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchProductsForDisease, Product } from "@/lib/products";
 
 interface AnalysisResult {
   diseaseName: string;
@@ -31,9 +38,11 @@ interface ScanHistory {
   diseaseName: string;
   date: string;
   confidence: number;
+  createdAt?: Timestamp;
 }
 
 export default function Scan() {
+  const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
@@ -45,69 +54,74 @@ export default function Scan() {
     treatment: false,
     prevention: false,
   });
-  const [scanHistory, setScanHistory] = useState<ScanHistory[]>([
-    {
-      id: "1",
-      image: "/placeholder.svg",
-      cropType: "Tomato",
-      diseaseName: "Early Blight",
-      date: "2024-01-15",
-      confidence: 87,
-    },
-    {
-      id: "2",
-      image: "/placeholder.svg",
-      cropType: "Maize",
-      diseaseName: "Leaf Rust",
-      date: "2024-01-14",
-      confidence: 92,
-    },
-  ]);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  const [scanHistory, setScanHistory] = useState<ScanHistory[]>([]);
+  const [showFallback, setShowFallback] = useState(false);
+  const [fallbackDiseases, setFallbackDiseases] = useState<DiseaseData[]>([]);
 
-  // UPDATED: Handle file selection with validation and processing
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Product Recommendations State
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(false);
 
+  // Helper to load products
+  const loadProducts = async (diseaseName: string) => {
+    setIsProductsLoading(true);
     try {
-      // Process and validate the image
-      const uploadResult = await processImageUpload(file, {
-        maxSizeInMB: 10,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        quality: 0.9,
-        acceptedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+      const products = await fetchProductsForDisease(diseaseName);
+      setRecommendedProducts(products);
+    } catch (error) {
+      console.error("Failed to load products", error);
+    } finally {
+      setIsProductsLoading(false);
+    }
+  };
+
+  // Seed diseases on load and setup history listener
+  useEffect(() => {
+    seedDiseases();
+
+    if (user) {
+      const q = query(
+        collection(db, "scan_history"),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const history = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as ScanHistory));
+        setScanHistory(history);
       });
 
-      if (!uploadResult.success) {
+      return () => unsubscribe();
+    }
+  }, [user]);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const uploadResult = await processImageUpload(file);
+        if (uploadResult.success && uploadResult.data) {
+          setSelectedImage(uploadResult.data);
+          setResult(null); // Clear previous results
+        } else {
+          toast({
+            title: "Upload Failed",
+            description: uploadResult.error,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error processing image:", error);
         toast({
-          title: "Upload Error",
-          description: uploadResult.error,
+          title: "Image Error",
+          description: "Could not process image. Please try again.",
           variant: "destructive",
         });
-        return;
       }
-
-      // Set the processed image
-      setSelectedImage(uploadResult.data!);
-      setResult(null);
-
-      // Show success toast with image info
-      if (uploadResult.metadata) {
-        toast({
-          title: "Image uploaded successfully",
-          description: `Size: ${(uploadResult.metadata.fileSize / 1024).toFixed(0)}KB, ${uploadResult.metadata.dimensions?.width}x${uploadResult.metadata.dimensions?.height}px`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to process image. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -115,83 +129,74 @@ export default function Scan() {
     setShowCamera(true);
   };
 
-  const handleCameraCapture = (imageSrc: string) => {
-    setSelectedImage(imageSrc);
-    setResult(null);
+  const handleCameraCapture = (imageData: string) => {
+    setSelectedImage(imageData);
+    setResult(null); // Clear previous results
     setShowCamera(false);
-    toast({
-      title: "Photo Captured",
-      description: "Image ready for analysis.",
-    });
   };
 
-  // ENHANCED: Real API integration with detailed error logging
   const handleAnalyze = async () => {
     if (!selectedImage) return;
 
     setIsAnalyzing(true);
+    setShowFallback(false);
     setProgress(0);
 
-    // Progress simulation
     const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
+      setProgress((prev) => (prev >= 90 ? 90 : prev + 10));
     }, 300);
 
     try {
       console.log('Starting analysis...');
-
-      const response = await analyzeCropImage(selectedImage, { apiKey: '' }); // apiKey ignored by new implementation
+      const response = await analyzeCropImage(selectedImage, { apiKey: '' });
 
       clearInterval(progressInterval);
       setProgress(100);
 
-      if (!response.success) {
-        const err = response as { error?: string };
-        throw new Error(err.error || 'Analysis failed');
-      }
-
-      // Check success explicitely to make TS happy
-      if (response.success) {
-        if (!response.data) {
-          throw new Error('No data received');
-        }
-        const data = response.data;
-        setResult(data);
-
+      if (response.success && response.data) {
+        setResult(response.data);
+        loadProducts(response.data.diseaseName);
         toast({
           title: "Analysis Complete",
-          description: `Detected: ${data.diseaseName}`,
+          description: `Detected: ${response.data.diseaseName}`,
         });
+      } else {
+        const errorMsg = (response as any).error || 'Analysis failed';
+        throw new Error(errorMsg);
       }
-
-      console.log('Analysis successful!');
 
     } catch (error) {
       clearInterval(progressInterval);
+      console.error('Analysis error, trying fallback:', error);
 
-      console.error('=== ANALYSIS ERROR ===', error);
-
-      let userMessage = "Please try again later";
-
-      if (error instanceof Error) {
-        userMessage = error.message;
+      try {
+        const localDiseases = await getAllDiseases();
+        setFallbackDiseases(localDiseases);
+        setShowFallback(true);
+        toast({
+          title: "AI Analysis Unsure",
+          description: "Using offline database. Check symptoms below.",
+        });
+      } catch (e) {
+        toast({ title: "Error", description: "Analysis failed.", variant: "destructive" });
       }
-
-      toast({
-        title: "Analysis Failed",
-        description: userMessage,
-        variant: "destructive",
-      });
     } finally {
       setIsAnalyzing(false);
       setProgress(0);
     }
+  };
+
+  const selectFallbackDisease = (disease: DiseaseData) => {
+    setResult({
+      diseaseName: disease.name,
+      confidence: 0,
+      cropType: "Manual Selection",
+      severity: disease.severity,
+      symptoms: disease.symptoms,
+      treatment: disease.treatment,
+      prevention: disease.prevention
+    });
+    setShowFallback(false);
   };
 
   const handleRemoveImage = () => {
@@ -228,23 +233,23 @@ export default function Scan() {
     }
   };
 
-  const handleSaveToHistory = () => {
-    if (!result || !selectedImage) return;
+  const handleSaveToHistory = async () => {
+    if (!result || !selectedImage || !user) return;
 
-    const newScan: ScanHistory = {
-      id: Date.now().toString(),
-      image: selectedImage,
-      cropType: result.cropType,
-      diseaseName: result.diseaseName,
-      date: new Date().toISOString().split("T")[0],
-      confidence: result.confidence,
-    };
-
-    setScanHistory([newScan, ...scanHistory]);
-    toast({
-      title: "Saved to history",
-      description: "Scan has been saved to your history.",
-    });
+    try {
+      await addDoc(collection(db, "scan_history"), {
+        userId: user.uid,
+        image: selectedImage,
+        cropType: result.cropType,
+        diseaseName: result.diseaseName,
+        date: new Date().toISOString().split("T")[0],
+        confidence: result.confidence,
+        createdAt: Timestamp.now()
+      });
+      toast({ title: "Saved", description: "Scan saved to history." });
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to save.", variant: "destructive" });
+    }
   };
 
   const handleShare = () => {
@@ -253,6 +258,9 @@ export default function Scan() {
       description: "Sharing functionality coming soon.",
     });
   };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   return (
     <DashboardLayout>
@@ -477,9 +485,54 @@ export default function Scan() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button className="flex-1" variant="outline">
-                    Product Recommendations
-                  </Button>
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button className="flex-1" variant="outline" disabled={isProductsLoading}>
+                        <ShoppingBag className="h-4 w-4 mr-2" />
+                        {isProductsLoading ? "Loading..." : "Product Recommendations"}
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent className="overflow-y-auto w-full sm:max-w-md">
+                      <SheetHeader>
+                        <SheetTitle>Recommended Products</SheetTitle>
+                        <SheetDescription>
+                          Treatments found for {result.diseaseName}
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="mt-6 space-y-4">
+                        {recommendedProducts.length === 0 ? (
+                          <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground">
+                            <p>No specific products found for this disease in our database.</p>
+                            <p className="text-xs mt-1">Try consulting an agronomist for generic {result.treatment.split(' ')[0]}s.</p>
+                          </div>
+                        ) : (
+                          recommendedProducts.map(product => (
+                            <Card key={product.id} className="overflow-hidden">
+                              <div className="flex flex-col">
+                                <div className="bg-muted h-32 flex items-center justify-center text-muted-foreground">
+                                  {/* Placeholder for product image since URLs might be empty or external */}
+                                  <ShoppingBag className="h-10 w-10 opacity-20" />
+                                </div>
+                                <div className="p-4">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <h4 className="font-bold">{product.productName}</h4>
+                                    <Badge variant="secondary">{product.priceRange.min} - {product.priceRange.max} {product.priceRange.currency}</Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mb-3">{product.activeIngredient} • {product.category}</p>
+                                  <p className="text-sm mb-3 line-clamp-2">{product.notes}</p>
+                                  <Button size="sm" className="w-full" asChild>
+                                    <a href="#" onClick={(e) => { e.preventDefault(); toast({ title: "Order", description: "Ordering functionality coming soon!" }) }}>
+                                      View Details <ExternalLink className="ml-2 h-3 w-3" />
+                                    </a>
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))
+                        )}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                   <Button variant="outline" size="icon" onClick={handleSaveToHistory}>
                     <Bookmark className="h-4 w-4" />
                   </Button>
@@ -487,6 +540,36 @@ export default function Scan() {
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Fallback Selection UI */}
+          {showFallback && (
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-800">
+                  <AlertCircle className="h-5 w-5" />
+                  Possible Matches
+                </CardTitle>
+                <CardDescription className="text-yellow-700">
+                  We couldn't reach the AI, but here are common diseases. Select one that matches your symptoms to see treatment.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {fallbackDiseases.map(disease => (
+                  <div key={disease.id}
+                    className="p-3 bg-white rounded border cursor-pointer hover:border-yellow-400 transition"
+                    onClick={() => selectFallbackDisease(disease)}>
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-bold text-foreground">{disease.name}</h4>
+                      <Badge variant="outline">{disease.severity}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {disease.symptoms.slice(0, 2).join(", ")}...
+                    </p>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}

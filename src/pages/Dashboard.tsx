@@ -3,11 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sprout, TrendingUp, MapPin, AlertCircle, ArrowRight, Loader2, Bell } from "lucide-react";
-import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore";
+import { Sprout, TrendingUp, MapPin, AlertCircle, ArrowRight, Loader2, Bell, Camera, Calendar, Sun, Cloud, Droplets } from "lucide-react";
+import { collection, query, where, onSnapshot, orderBy, limit, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { getCoordinates, getWeather, getWeatherDescription } from "@/lib/weather";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -21,6 +23,8 @@ export default function Dashboard() {
   });
   const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<any>(null);
+  const [userRegion, setUserRegion] = useState("Central Kenya");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -29,6 +33,28 @@ export default function Dashboard() {
     }
 
     if (!user) return;
+
+    // Fetch User Profile for Region
+    const fetchProfile = async () => {
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const region = docSnap.data().location || "Central Kenya";
+          setUserRegion(region);
+
+          // Fetch Weather
+          const coords = getCoordinates(region);
+          if (coords) {
+            const wData = await getWeather(coords.lat, coords.lon);
+            setWeather(wData);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading profile/weather:", error);
+      }
+    };
+    fetchProfile();
 
     // Real-time listener for Counts & Activity
     const unsubscribe = onSnapshot(
@@ -58,8 +84,79 @@ export default function Dashboard() {
   if (authLoading || loading) {
     return (
       <DashboardLayout>
-        <div className="flex h-[80vh] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-6">
+          {/* Welcome Skeleton */}
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-9 w-48" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+
+          {/* Weather Skeleton */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-2 space-y-2">
+              {/* Spacer for alignment if needed, or just let it flow */}
+            </div>
+            <Card className="border-blue-100">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <div className="flex items-baseline gap-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Stats Skeleton */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-12 mb-1" />
+                  <Skeleton className="h-3 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Content Skeleton */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-4">
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-start gap-4 p-3">
+                    <Skeleton className="h-2 w-2 rounded-full mt-2" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card className="col-span-3">
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -67,13 +164,37 @@ export default function Dashboard() {
 
   if (!user) return null;
 
+  const currentTemp = weather?.current?.temperature_2m;
+  const weatherCode = weather?.current?.weather_code || 0;
+  const weatherDesc = getWeatherDescription(weatherCode);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {user.email}</p>
+        {/* Welcome Section & Weather */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="md:col-span-2 flex flex-col justify-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back, {user.email}</p>
+          </div>
+
+          {/* Weather Widget */}
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">{userRegion}</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-bold">{currentTemp ?? '--'}°C</span>
+                  <span className="text-sm text-muted-foreground">{weatherDesc}</span>
+                </div>
+              </div>
+              {weatherCode < 3 ? (
+                <Sun className="h-10 w-10 text-yellow-500" />
+              ) : (
+                <Cloud className="h-10 w-10 text-blue-400" />
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Stats Grid */}
