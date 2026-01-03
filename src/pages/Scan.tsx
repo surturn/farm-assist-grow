@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 
 // Import the utility functions
-import { processImageUpload } from "@/lib/image_upload_util";
+import { processImageUpload, resizeBase64 } from "@/lib/image_upload_util";
 import { analyzeCropImage } from "@/lib/openai_vision_api";
 import CameraCapture from "@/components/CameraCapture";
 import { seedDiseases, getAllDiseases, DiseaseData } from "@/lib/disease_fallback";
@@ -156,10 +156,41 @@ export default function Scan() {
       if (response.success && response.data) {
         setResult(response.data);
         loadProducts(response.data.diseaseName);
-        toast({
-          title: "Analysis Complete",
-          description: `Detected: ${response.data.diseaseName}`,
-        });
+
+        // Auto-save the scan
+        try {
+          if (user) {
+            // Create a thumbnail for the database to avoid 1MB limit
+            const thumbnailImage = await resizeBase64(selectedImage, 500, 500, 0.7);
+
+            await addDoc(collection(db, "scan_history"), {
+              userId: user.uid,
+              image: thumbnailImage,
+              cropType: response.data.cropType,
+              diseaseName: response.data.diseaseName,
+              date: new Date().toISOString().split("T")[0],
+              confidence: response.data.confidence,
+              createdAt: Timestamp.now()
+            });
+            toast({
+              title: "Analysis Complete & Saved",
+              description: `Detected: ${response.data.diseaseName}. Result has been saved.`,
+            });
+          } else {
+            toast({
+              title: "Analysis Complete",
+              description: `Detected: ${response.data.diseaseName}`,
+            });
+          }
+        } catch (saveError) {
+          console.error("Auto-save failed", saveError);
+          toast({
+            title: "Analysis Complete",
+            description: `Detected: ${response.data.diseaseName}. (Auto-save failed)`,
+            variant: "destructive" // Or strict warning
+          });
+        }
+
       } else {
         const errorMsg = (response as any).error || 'Analysis failed';
         throw new Error(errorMsg);
@@ -233,24 +264,8 @@ export default function Scan() {
     }
   };
 
-  const handleSaveToHistory = async () => {
-    if (!result || !selectedImage || !user) return;
+  // handleSaveToHistory removed as it is now auto-saved
 
-    try {
-      await addDoc(collection(db, "scan_history"), {
-        userId: user.uid,
-        image: selectedImage,
-        cropType: result.cropType,
-        diseaseName: result.diseaseName,
-        date: new Date().toISOString().split("T")[0],
-        confidence: result.confidence,
-        createdAt: Timestamp.now()
-      });
-      toast({ title: "Saved", description: "Scan saved to history." });
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to save.", variant: "destructive" });
-    }
-  };
 
   const handleShare = () => {
     toast({
@@ -533,8 +548,8 @@ export default function Scan() {
                       </div>
                     </SheetContent>
                   </Sheet>
-                  <Button variant="outline" size="icon" onClick={handleSaveToHistory}>
-                    <Bookmark className="h-4 w-4" />
+                  <Button variant="secondary" size="icon" disabled>
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
                   </Button>
                   <Button variant="outline" size="icon" onClick={handleShare}>
                     <Share2 className="h-4 w-4" />

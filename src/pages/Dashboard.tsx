@@ -22,6 +22,7 @@ export default function Dashboard() {
     trees: 0
   });
   const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
+  const [recentScans, setRecentScans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
   const [userRegion, setUserRegion] = useState("Central Kenya");
@@ -57,7 +58,7 @@ export default function Dashboard() {
     fetchProfile();
 
     // Real-time listener for Counts & Activity
-    const unsubscribe = onSnapshot(
+    const unsubscribeNotifications = onSnapshot(
       query(collection(db, "notifications"), where("userId", "==", user.uid), orderBy("createdAt", "desc")),
       (snapshot) => {
         const alerts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -66,8 +67,7 @@ export default function Dashboard() {
         setStats(prev => ({
           ...prev,
           alerts: unreadCount,
-          // Mocking other stats for now as their collections are not fully set up in this context
-          // In a full implementation, we would listen to 'farms', 'crops', 'trees' collections similarly
+          // Mocking other stats for now
           farms: 1,
           crops: 5,
           trees: 12
@@ -78,7 +78,19 @@ export default function Dashboard() {
       }
     );
 
-    return () => unsubscribe();
+    // Real-time listener for Recent Scans
+    const unsubscribeScans = onSnapshot(
+      query(collection(db, "scan_history"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5)),
+      (snapshot) => {
+        const scans = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        setRecentScans(scans);
+      }
+    );
+
+    return () => {
+      unsubscribeNotifications();
+      unsubscribeScans();
+    };
   }, [user, authLoading, navigate]);
 
   if (authLoading || loading) {
@@ -283,6 +295,50 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
+          {/* Recent Scans Section */}
+          <Card className="col-span-4 lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Recent Scans</CardTitle>
+              <CardDescription>Latest disease detections</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentScans.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                    <Camera className="h-8 w-8 mb-2 opacity-20" />
+                    <p>No scans yet</p>
+                  </div>
+                ) : (
+                  recentScans.map((scan) => (
+                    <div key={scan.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                      <div className="h-10 w-10 rounded bg-muted overflow-hidden">
+                        <img src={scan.image} alt="Crop" className="h-full w-full object-cover" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">{scan.diseaseName}</p>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${scan.confidence > 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                            {scan.confidence}%
+                          </span>
+                          <p className="text-xs text-muted-foreground">
+                            {scan.createdAt?.toDate ? format(scan.createdAt.toDate(), 'MMM d, h:mm a') : scan.date}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="mt-4">
+                <Button variant="outline" className="w-full" size="sm" asChild>
+                  <Link to="/scan">
+                    View Scan History <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="col-span-3">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -308,6 +364,6 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }
