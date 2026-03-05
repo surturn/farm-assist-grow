@@ -71,3 +71,11 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Scalable architecture refactor (frontend + backend)
+
+See `docs/architecture-migration.md` for:
+- target folder structure,
+- migration plan,
+- sample backend and frontend architecture,
+- local run + Docker deployment instructions.

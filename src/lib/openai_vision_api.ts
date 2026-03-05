@@ -65,14 +65,13 @@ export async function analyzeCropImage(
   }
 
   try {
-    const response = await fetch('/api/analyze-crop', {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL ?? '/api'}/analyze-crop`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         imageBase64,
-        // We could pass farmId here if extended
       }),
     });
 
