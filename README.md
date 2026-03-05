@@ -1,73 +1,67 @@
-# Welcome to your Lovable project
+# FarmAssist
 
-## Project info
+FarmAssist has been restructured from a monolithic Vite project into a scalable **Monorepo** architecture separating concerns between a feature-driven React frontend and a layered Express/Prisma backend.
 
-**URL**: https://lovable.dev/projects/155ed1ef-ed77-4aab-b0b5-ff24211d2a2e
+## Tech Stack Overview
+- **Frontend**: React, Vite, TypeScript, Tailwind CSS, TanStack Query, shadcn-ui
+- **Backend**: Express, TypeScript, PostgreSQL (Prisma ORM), Firebase Admin Auth, Redis (Caching & Rate Limiting)
+- **Deployment**: Docker Compose
 
-## How can I edit this code?
+## Setting up Environment Variables
+A shared `.env.local` file at the root powers both the frontend and backend. Ensure it includes:
 
-There are several ways of editing your application.
+```env
+# Backend Database and Cache
+DATABASE_URL="postgresql://postgres:password@localhost:5432/farmassist"
+REDIS_URL="redis://localhost:6379"
 
-**Use Lovable**
+# Shared OpenAI (consumed securely by the backend)
+OPENAI_API_KEY="your_openai_key"
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/155ed1ef-ed77-4aab-b0b5-ff24211d2a2e) and start prompting.
+# Frontend/Backend Firebase Configuration (Client & Admin)
+VITE_FIREBASE_API_KEY="..."
+FIREBASE_PROJECT_ID="..."
+FIREBASE_CLIENT_EMAIL="..."
+FIREBASE_PRIVATE_KEY="..."
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Example URL variables
+VITE_API_URL="http://localhost:5000/api/v1"
+PORT=5000
 ```
 
-**Edit a file directly in GitHub**
+## Running Locally (Development)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. **Install Dependencies:**
+   Install dependencies for the entire workspace from the root.
+   ```bash
+   npm install
+   ```
 
-**Use GitHub Codespaces**
+2. **Start Database and Redis:**
+   You can run Local Postgres/Redis via Docker or run your own manual setups.
+   ```bash
+   docker-compose up -d postgres redis
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3. **Database Migration:**
+   Apply the Prisma schema to the database.
+   ```bash
+   npm run build --workspace=backend
+   npx prisma db push --schema=./backend/prisma/schema.prisma
+   ```
 
-## What technologies are used for this project?
+4. **Start the Applicaitons:**
+   Run both frontend and backend concurrently from the root directory.
+   ```bash
+   npm run dev
+   ```
+   - **Frontend:** http://localhost:5173
+   - **Backend API:** http://localhost:5000/health
 
-This project is built with:
+## Running via Docker Compose (Production Build)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/155ed1ef-ed77-4aab-b0b5-ff24211d2a2e) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+To build and spin up the complete Stack (Postgres, Redis, Express Backend, Nginx Frontend):
+```bash
+docker-compose up --build -d
+```
+The Frontend will be exposed on port `80` while the backend API is routed internally via port `5000`.

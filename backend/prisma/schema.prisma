@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  firebaseUid   String         @unique
+  email         String         @unique
+  displayName   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  farmMemberships FarmMember[]
+  tasks         Task[]
+  notifications Notification[]
+}
+
+model Farm {
+  id          String       @id @default(uuid())
+  name        String
+  location    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     FarmMember[]
+  crops       Crop[]
+  tasks       Task[]
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model FarmMember {
+  id        String   @id @default(uuid())
+  farmId    String
+  userId    String
+  role      Role     @default(MEMBER)
+  joinedAt  DateTime @default(now())
+  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([farmId, userId])
+}
+
+model Crop {
+  id          String   @id @default(uuid())
+  farmId      String
+  name        String
+  type        String
+  plantedAt   DateTime?
+  expectedHarvest DateTime?
+  status      String   @default("GROWING") // GROWING, HARVESTED, DISEASED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  farmId      String
+  title       String
+  description String?
+  status      String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  assignedTo  String?
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  farm        Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  assignee    User?     @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

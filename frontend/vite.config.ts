@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  envDir: '../',
   server: {
     port: 5173,
     // Removed the proxy section completely
