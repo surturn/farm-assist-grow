@@ -2,13 +2,13 @@
     "name": "farm-assist-grow-monorepo",
     "private": true,
     "workspaces": [
-        "frontend",
-        "backend"
+        "apps/*",
+        "packages/*"
     ],
     "scripts": {
-        "dev:frontend": "npm run dev --workspace=frontend",
+        "dev:frontend": "npm run dev --workspace=vite_react_shadcn_ts",
         "dev:backend": "npm run dev --workspace=backend",
-        "dev": "npm run dev:frontend & npm run dev:backend",
+        "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
         "start": "node server.js"
     },
     "version": "1.0.0",
@@ -414,5 +414,8 @@
     "bugs": {
         "url": "https://github.com/surturn/farm-assist-grow/issues"
     },
-    "homepage": "https://github.com/surturn/farm-assist-grow#readme"
+    "homepage": "https://github.com/surturn/farm-assist-grow#readme",
+    "devDependencies": {
+        "concurrently": "^9.2.1"
+    }
 }
