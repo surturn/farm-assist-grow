@@ -20,7 +20,7 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
             .where('userId', '==', userId)
             .orderBy('createdAt', 'desc')
             .get();
-        
+
         const alerts = notifSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         const unreadCount = alerts.filter((a: any) => !a.read).length;
 
@@ -30,13 +30,13 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
             .orderBy('createdAt', 'desc')
             .limit(5)
             .get();
-        
+
         const scans = scansSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
         const scansSnapshotAll = await dbAdmin.collection('scans')
             .where('userId', '==', userId)
             .get();
-            
+
         const totalScans = scansSnapshotAll.size;
 
         // In a real app we would compute or fetch recommendations based on scans/weather
@@ -50,7 +50,13 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
             alerts: alerts.slice(0, 5),
             recommendations,
             userRegion,
-            systemMode
+            systemMode,
+            stats: {
+                alerts: unreadCount,
+                farms: 1,
+                crops: 5,
+                trees: 12
+            }
         });
     } catch (error: any) {
         console.error('Dashboard Data Error:', error);

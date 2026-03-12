@@ -23,7 +23,10 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
             return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
         }
 
-        const idToken = authHeader.split('Bearer ')[1];
+        const idToken = authHeader.split('Bearer ')[1]?.trim();
+        if (!idToken) {
+            return res.status(401).json({ error: 'Unauthorized: Missing token' });
+        }
 
         // Verify Firebase token
         const decodedToken = await authAdmin.verifyIdToken(idToken);
@@ -40,9 +43,24 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
             id: dbUser?.id, // Useful for linking DB operations
         };
 
+        if (!dbUser) {
+            console.warn(`Authenticated Firebase User ${decodedToken.uid} missing from local PostgreSQL Database. Re-creating...`);
+            const newUser = await prisma.user.create({
+                data: {
+                    firebaseUid: decodedToken.uid,
+                    email: decodedToken.email || 'unknown@example.com',
+                    displayName: decodedToken.name || 'Test User'
+                }
+            });
+            req.user.id = newUser.id;
+        }
+
         next();
     } catch (error) {
-        console.error('Auth verification failed:', error);
+        console.error('Auth verification failed. Token validation rejected:', {
+            message: error instanceof Error ? error.message : error,
+            code: (error as any)?.code,
+        });
         return res.status(401).json({ error: 'Unauthorized: Invalid token' });
     }
 };

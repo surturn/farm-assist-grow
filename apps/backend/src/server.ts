@@ -5,8 +5,8 @@ const startServer = () => {
     const PORT = env.PORT || 5000;
 
     app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-        console.log(`🌍 Environment: ${env.NODE_ENV}`);
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Environment: ${env.NODE_ENV}`);
     });
 
     // Handle unhandled Promise rejections and uncaught exceptions safely

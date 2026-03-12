@@ -57,13 +57,22 @@ function AppSidebar() {
   const collapsed = state === "collapsed";
 
   const [systemMode, setSystemMode] = useState<string>('basic');
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    // We can fetch user settings from dashboardService for navigation mapping
-    dashboardService.getDashboardData().then(data => {
-      setSystemMode(data.systemMode);
-    }).catch(console.error);
-  }, []);
+    if (loading || !user) return;
+
+    const fetchSystemMode = async () => {
+      try {
+        const data = await dashboardService.getDashboardData();
+        setSystemMode(data.systemMode || 'basic');
+      } catch (error) {
+        console.error("Failed to fetch system mode:", error);
+      }
+    };
+
+    fetchSystemMode();
+  }, [loading, user]);
 
   const navigationItems = getNavigationItems(t, systemMode);
 
@@ -135,13 +144,14 @@ import { Link } from "react-router-dom";
 
 function DashboardHeader() {
   const location = useLocation();
-  const { user, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const { user, loading, logout } = useAuth();
+
   useEffect(() => {
-    if (!user) return;
+    if (loading || !user) return;
 
     const fetchAlerts = async () => {
       try {
@@ -149,14 +159,12 @@ function DashboardHeader() {
         const unread = data.alerts?.filter((a: any) => !a.read).length || 0;
         setUnreadCount(unread);
       } catch (e) {
-        console.error("Failed to fetch alerts count");
+        console.error("Failed to fetch alerts count", e);
       }
     };
 
     fetchAlerts();
-    // In a real app we might poll this via a websocket or interval. For now, fetch once.
-  }, [user]);
-
+  }, [loading, user]);
   const getPageTitle = () => {
     const route = location.pathname;
     const navigationItems = getNavigationItems(t, 'hybrid'); // Passing hybrid to match all routes
