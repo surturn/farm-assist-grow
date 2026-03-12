@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sprout, TrendingUp, MapPin, AlertCircle, ArrowRight, Loader2, Bell, Camera, Calendar, Sun, Cloud, Droplets } from "lucide-react";
 import { format } from "date-fns";
-import { apiClient } from "@/api/client";
+import { dashboardService } from "@/services/dashboard.service";
 import { Button } from "@/components/ui/button";
 import { getCoordinates, getWeather, getWeatherDescription } from "@/lib/weather";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +22,7 @@ export default function Dashboard() {
   });
   const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
   const [recentScans, setRecentScans] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<any>(null);
   const [userRegion, setUserRegion] = useState("Central Kenya");
@@ -36,12 +37,18 @@ export default function Dashboard() {
 
     const fetchDashboardData = async () => {
       try {
-        const { data } = await apiClient.get('/dashboard');
+        const data = await dashboardService.getDashboardData();
         
         setUserRegion(data.userRegion);
-        setStats(data.stats);
-        setRecentAlerts(data.recentAlerts);
+        setStats(data.stats || {
+          alerts: data.alerts?.filter((a: any) => !a.read).length || 0,
+          farms: 1,
+          crops: 5,
+          trees: 12
+        });
+        setRecentAlerts(data.alerts);
         setRecentScans(data.recentScans);
+        setRecommendations(data.recommendations || []);
 
         // Fetch Weather
         const coords = getCoordinates(data.userRegion);
@@ -302,6 +309,28 @@ export default function Dashboard() {
                     View Scan History <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recommendations Section */}
+          <Card className="col-span-4 lg:col-span-3">
+            <CardHeader>
+              <CardTitle>AI Recommendations</CardTitle>
+              <CardDescription>Generated from your recent scans</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recommendations.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No new recommendations</p>
+                ) : (
+                  recommendations.map((rec) => (
+                    <div key={rec.id} className="p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
+                      <p className="font-semibold text-sm text-blue-900">{rec.title}</p>
+                      <p className="text-xs text-blue-700 mt-1">{rec.desc}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

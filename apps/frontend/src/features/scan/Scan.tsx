@@ -16,7 +16,7 @@ import { processImageUpload, resizeBase64 } from "@/lib/image_upload_util";
 import { analyzeCropImage } from "@/lib/openai_vision_api";
 import CameraCapture from "@/components/CameraCapture";
 import { getAllDiseases, DiseaseData } from "@/lib/disease_fallback";
-import { apiClient } from "@/api/client";
+import { scansService } from "@/services/scans.service";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchProductsForDisease, Product } from "@/lib/products";
 
@@ -80,7 +80,7 @@ export default function Scan() {
     if (user) {
       const fetchHistory = async () => {
         try {
-          const { data } = await apiClient.get('/scans');
+          const data = await scansService.getScans();
           setScanHistory(data);
         } catch (error) {
           console.error("Failed to fetch scan history", error);
@@ -162,7 +162,7 @@ export default function Scan() {
               confidence: response.data.confidence,
             };
 
-            const { data } = await apiClient.post('/scans', newScan);
+            const data = await scansService.createScan(newScan);
             setScanHistory(prev => [data, ...prev]);
 
             toast({

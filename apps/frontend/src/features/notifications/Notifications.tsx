@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bell, Check, Info, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient } from "@/api/client";
+import { notificationsService } from "@/services/notifications.service";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,7 +29,7 @@ export default function Notifications() {
 
         const fetchNotifications = async () => {
             try {
-                const { data } = await apiClient.get('/notifications');
+                const data = await notificationsService.getNotifications();
                 setNotifications(data);
                 setLoading(false);
             } catch (error) {
@@ -43,7 +43,7 @@ export default function Notifications() {
 
     const markAsRead = async (id: string) => {
         try {
-            await apiClient.put(`/notifications/${id}/read`);
+            await notificationsService.markAsRead(id);
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
         } catch (error) {
             console.error("Error marking read:", error);
@@ -53,7 +53,7 @@ export default function Notifications() {
     const markAllRead = async () => {
         if (!user) return;
         try {
-            await apiClient.post('/notifications/mark-all-read');
+            await notificationsService.markAllAsRead();
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             toast.success("All marked as read");
         } catch (error) {

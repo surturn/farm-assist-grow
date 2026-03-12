@@ -2,6 +2,7 @@
  * OpenAI Vision API Integration
  * Handles crop disease detection using GPT-4 Vision
  */
+import { apiClient } from '../api/client';
 
 export interface CropDiseaseAnalysis {
   diseaseName: string;
@@ -65,40 +66,43 @@ export async function analyzeCropImage(
   }
 
   try {
-    const response = await fetch('/api/v1/crops/analyze', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        imageBase64,
-        // We could pass farmId here if extended
-      }),
+    const response = await apiClient.post('/crops/analyze', {
+      imageBase64,
+      // We could pass farmId here if extended
+    }, {
+      validateStatus: (status) => status >= 200 && status < 300 // Accept 202
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `API request failed with status ${response.status}`;
-      let errorDetails = errorText;
+    const data = response.data;
 
-      try {
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.error || errorMessage;
-        errorDetails = errorJson.details || errorDetails;
-      } catch (e) {
-        // content was not json
+    if (response.status === 202 && data.jobId) {
+      // Start polling for job completion
+      const maxRetries = 30; // 1 minute max polling
+      let attempts = 0;
+      
+      while (attempts < maxRetries) {
+        await new Promise(r => setTimeout(r, 2000));
+        
+        const pollRes = await apiClient.get(`/crops/analyze/${data.jobId}`);
+        const pollData = pollRes.data;
+        const state = pollData.state;
+        
+        if (state === 'completed') {
+           return {
+             success: true,
+             data: pollData.result.result as CropDiseaseAnalysis,
+           };
+        }
+        if (state === 'failed') {
+           return { success: false, error: 'AI Analysis Job failed', details: pollData.reason };
+        }
+        
+        attempts++;
       }
-
-      return {
-        success: false,
-        error: errorMessage,
-        details: errorDetails
-      };
+      return { success: false, error: 'Timeout waiting for AI analysis' };
     }
 
-    const data = await response.json();
-
-    // The backend now returns the parsed JSON directly
+    // The backend returns the parsed JSON directly for fallback sync paths
     return {
       success: true,
       data: data as CropDiseaseAnalysis,

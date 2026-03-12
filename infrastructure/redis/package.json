@@ -1,0 +1,8 @@
+{
+  "name": "@farmassist/redis",
+  "version": "1.0.0",
+  "main": "redis.ts",
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  }
+}

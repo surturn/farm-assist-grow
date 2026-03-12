@@ -1,0 +1,8 @@
+{
+  "name": "@farmassist/firebase-admin",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

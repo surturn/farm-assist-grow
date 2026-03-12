@@ -1,0 +1,9 @@
+{
+  "name": "@farmassist/queue",
+  "version": "1.0.0",
+  "main": "ai-queue.ts",
+  "dependencies": {
+    "bullmq": "^5.34.10",
+    "@farmassist/redis": "*"
+  }
+}

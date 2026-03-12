@@ -1,8 +1,21 @@
-import { env } from '../config/env';
+import { redis } from '@farmassist/redis';
+import crypto from 'crypto';
 
 export const analyzeCropImage = async (imageBase64: string, farmId?: string) => {
-    const apiKey = env.OPENAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OpenAI API key missing');
+
+    const imageHash = crypto.createHash('sha256').update(imageBase64).digest('hex');
+    const cacheKey = `crop_analysis:${imageHash}`;
+
+    // 1. Check Redis Cache
+    const cachedResult = await redis.get(cacheKey);
+    if (cachedResult) {
+        console.log('Cache hit for crop analysis');
+        return JSON.parse(cachedResult);
+    }
+
+    console.log('Cache miss for crop analysis, calling OpenAI...');
 
     const systemPrompt = `You are a professional agricultural pathologist and plant disease specialist with expertise in crop pathology, agronomy, and pest management.
 
@@ -109,5 +122,11 @@ Do NOT include explanations or extra text.`;
 
     if (!content) throw new Error('No content returned from OpenAI');
 
-    return JSON.parse(content);
+    const parsedResult = JSON.parse(content);
+
+    // Cache the result for 24 hours (86400 seconds)
+    // Adjust TTL based on requirements
+    await redis.setex(cacheKey, 86400, JSON.stringify(parsedResult));
+
+    return parsedResult;
 };

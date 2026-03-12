@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../db/prisma';
+import { prisma } from '@farmassist/database';
 import { createFarmSchema } from '../validators/farm.validator';
 
 export const getFarms = async (req: Request, res: Response) => {

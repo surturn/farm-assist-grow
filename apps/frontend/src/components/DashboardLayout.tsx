@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Home, Camera, Map, Calendar, TreeDeciduous, Settings, Star, Bell, Search, Sprout, LogOut, User } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,14 +28,23 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-const getNavigationItems = (t: any) => [
-  { label: t('nav.dashboard'), icon: Home, route: "/dashboard" },
-  { label: t('nav.scan'), icon: Camera, route: "/scan" },
-  { label: t('nav.farms'), icon: Map, route: "/farms" },
-  { label: t('nav.planning'), icon: Calendar, route: "/planning" },
-  { label: t('nav.trees'), icon: TreeDeciduous, route: "/trees" },
-  { label: t('nav.settings'), icon: Settings, route: "/settings" },
-];
+import { dashboardService } from "@/services/dashboard.service";
+
+const getNavigationItems = (t: any, systemMode: string = 'basic') => {
+  const items = [
+    { label: t('nav.dashboard'), icon: Home, route: "/dashboard" },
+    { label: t('nav.scan'), icon: Camera, route: "/scan" },
+    { label: t('nav.planning'), icon: Calendar, route: "/planning" },
+  ];
+
+  if (systemMode === 'iot' || systemMode === 'hybrid') {
+    items.push({ label: t('nav.farms'), icon: Map, route: "/farms" });
+    items.push({ label: t('nav.trees'), icon: TreeDeciduous, route: "/trees" });
+  }
+
+  items.push({ label: t('nav.settings'), icon: Settings, route: "/settings" });
+  return items;
+};
 
 const bottomItems = [
   { label: "Upgrade", icon: Star, route: "/subscription", highlight: true },
@@ -47,7 +56,16 @@ function AppSidebar() {
   const { t } = useTranslation();
   const collapsed = state === "collapsed";
 
-  const navigationItems = getNavigationItems(t);
+  const [systemMode, setSystemMode] = useState<string>('basic');
+
+  useEffect(() => {
+    // We can fetch user settings from dashboardService for navigation mapping
+    dashboardService.getDashboardData().then(data => {
+      setSystemMode(data.systemMode);
+    }).catch(console.error);
+  }, []);
+
+  const navigationItems = getNavigationItems(t, systemMode);
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
@@ -114,9 +132,6 @@ function AppSidebar() {
 }
 
 import { Link } from "react-router-dom";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { useState, useEffect } from "react";
 
 function DashboardHeader() {
   const location = useLocation();
@@ -128,22 +143,23 @@ function DashboardHeader() {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(
-      collection(db, "notifications"),
-      where("userId", "==", user.uid),
-      where("read", "==", false)
-    );
+    const fetchAlerts = async () => {
+      try {
+        const data = await dashboardService.getDashboardData();
+        const unread = data.alerts?.filter((a: any) => !a.read).length || 0;
+        setUnreadCount(unread);
+      } catch (e) {
+        console.error("Failed to fetch alerts count");
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUnreadCount(snapshot.size);
-    });
-
-    return () => unsubscribe();
+    fetchAlerts();
+    // In a real app we might poll this via a websocket or interval. For now, fetch once.
   }, [user]);
 
   const getPageTitle = () => {
     const route = location.pathname;
-    const navigationItems = getNavigationItems(t);
+    const navigationItems = getNavigationItems(t, 'hybrid'); // Passing hybrid to match all routes
     const item = [...navigationItems, ...bottomItems].find((i) => i.route === route);
     if (route === "/notifications") return "Notifications";
     return item?.label || "Dashboard";

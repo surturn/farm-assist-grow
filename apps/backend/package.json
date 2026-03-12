@@ -12,13 +12,18 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@farmassist/ai": "^1.0.0",
+        "@farmassist/database": "^1.0.0",
+        "@farmassist/firebase-admin": "^1.0.0",
         "@prisma/adapter-pg": "^7.4.2",
         "@prisma/client": "^7.4.2",
+        "bullmq": "^5.71.0",
         "cors": "^2.8.6",
         "dotenv": "^17.3.1",
         "express": "^5.2.1",
         "firebase-admin": "^13.7.0",
         "helmet": "^8.1.0",
+        "ioredis": "^5.10.0",
         "pg": "^8.20.0",
         "redis": "^5.11.0",
         "zod": "^3.25.76"

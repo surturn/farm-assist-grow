@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { dbAdmin } from '../config/firebase';
-import { prisma } from '../db/prisma';
+import { dbAdmin } from '@farmassist/firebase-admin';
+import { prisma } from '@farmassist/database';
 
 export const getDashboardData = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -11,7 +11,9 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
 
         // Fetch User Profile
         const userDoc = await dbAdmin.collection('users').doc(userId).get();
-        const userRegion = userDoc.exists ? userDoc.data()?.location || 'Central Kenya' : 'Central Kenya';
+        const userData = userDoc.exists ? userDoc.data() : {};
+        const userRegion = userData?.location || 'Central Kenya';
+        const systemMode = userData?.systemMode || 'basic'; // "basic", "iot", or "hybrid"
 
         // Fetch Notifications
         const notifSnapshot = await dbAdmin.collection('notifications')
@@ -31,18 +33,24 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
         
         const scans = scansSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        const stats = {
-            alerts: unreadCount,
-            farms: 1, // Mock
-            crops: 5, // Mock
-            trees: 12 // Mock
-        };
+        const scansSnapshotAll = await dbAdmin.collection('scans')
+            .where('userId', '==', userId)
+            .get();
+            
+        const totalScans = scansSnapshotAll.size;
+
+        // In a real app we would compute or fetch recommendations based on scans/weather
+        const recommendations = [
+            { id: "1", title: "Apply Copper Fungicide", desc: "Based on recent Early Blight detection" }
+        ];
 
         return res.status(200).json({
-            stats,
-            recentAlerts: alerts.slice(0, 5),
+            totalScans,
             recentScans: scans,
-            userRegion
+            alerts: alerts.slice(0, 5),
+            recommendations,
+            userRegion,
+            systemMode
         });
     } catch (error: any) {
         console.error('Dashboard Data Error:', error);

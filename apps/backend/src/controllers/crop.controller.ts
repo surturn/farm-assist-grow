@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
-import { analyzeCropImage } from '../services/ai.service';
-import { prisma } from '../db/prisma';
-import { redisClient } from '../cache/redis';
+import { analyzeCropImage } from '@farmassist/ai';
+import { prisma } from '@farmassist/database';
+import { redis } from '@farmassist/redis';
+import { aiQueue } from '@farmassist/queue';
 import crypto from 'crypto';
 
 export const analyzeCrop = async (req: Request, res: Response): Promise<any> => {
@@ -15,26 +16,49 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<any> => 
         const imageHash = crypto.createHash('sha256').update(imageBase64).digest('hex');
         const cacheKey = `crop_analysis:${imageHash}`;
 
-        if (redisClient) {
-            const cachedResult = await redisClient.get(cacheKey);
+        if (redis.status === 'ready') {
+            const cachedResult = await redis.get(cacheKey);
             if (cachedResult) {
                 return res.status(200).json(JSON.parse(cachedResult));
             }
         }
 
-        const analysisResult = await analyzeCropImage(imageBase64, farmId);
+        // We push to the BullMQ queue
+        const job = await aiQueue.add('analyze-crop', { imageBase64, farmId });
 
-        if (redisClient) {
-            await redisClient.set(cacheKey, JSON.stringify(analysisResult), { EX: 86400 }); // Cache for 24 hours
-        }
-
-        if (farmId) {
-            // await prisma.task.create({ ... })
-        }
-
-        return res.status(200).json(analysisResult);
+        return res.status(202).json({
+            message: "Analysis started",
+            jobId: job.id
+        });
     } catch (error: any) {
         console.error('Crop Analysis Controller Error:', error);
         res.status(500).json({ error: 'Failed to analyze crop', details: error.message });
+    }
+};
+
+export const getAnalysisStatus = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { jobId } = req.params;
+        const job = await aiQueue.getJob(jobId);
+        
+        if (!job) {
+            return res.status(404).json({ error: "Job not found" });
+        }
+        
+        const state = await job.getState();
+        const progress = job.progress;
+        const reason = job.failedReason;
+        const result = job.returnvalue;
+
+        return res.status(200).json({
+            jobId,
+            state,
+            progress,
+            reason,
+            result
+        });
+    } catch (error: any) {
+        console.error('Job Status Controller Error:', error);
+        res.status(500).json({ error: 'Failed to fetch job status' });
     }
 };

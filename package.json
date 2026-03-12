@@ -3,7 +3,8 @@
     "private": true,
     "workspaces": [
         "apps/*",
-        "packages/*"
+        "packages/*",
+        "infrastructure/*"
     ],
     "scripts": {
         "dev:frontend": "npm run dev --workspace=vite_react_shadcn_ts",

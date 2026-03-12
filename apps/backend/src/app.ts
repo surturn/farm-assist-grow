@@ -3,11 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env';
 
-// We import these just to ensure they instantiate
-import './config/firebase';
-import './cache/redis';
-import './db/prisma';
-
 // Initialize the Express App
 const app: Express = express();
 
@@ -36,6 +31,7 @@ import scanRoutes from './routes/scan.routes';
 import notificationRoutes from './routes/notification.routes';
 import productRoutes from './routes/product.routes';
 import diseaseRoutes from './routes/disease.routes';
+import iotRoutes from './routes/iot.routes';
 
 app.use('/api/v1/farms', farmRoutes);
 app.use('/api/v1/crops', cropRoutes);
@@ -44,6 +40,7 @@ app.use('/api/v1/scans', scanRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/diseases', diseaseRoutes);
+app.use('/api/v1/iot', iotRoutes);
 
 
 /**

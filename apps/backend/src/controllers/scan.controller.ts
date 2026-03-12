@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { dbAdmin } from '../config/firebase';
+import { dbAdmin } from '@farmassist/firebase-admin';
 import * as admin from 'firebase-admin';
 
 export const getScans = async (req: Request, res: Response): Promise<any> => {

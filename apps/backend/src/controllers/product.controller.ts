@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { dbAdmin } from '../config/firebase';
+import { dbAdmin } from '@farmassist/firebase-admin';
 
 export const getProductsForDisease = async (req: Request, res: Response): Promise<any> => {
     try {

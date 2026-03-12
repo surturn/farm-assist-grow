@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { redisClient } from '../cache/redis';
+import { redis } from '@farmassist/redis';
 
 interface RateLimitOptions {
     windowSeconds: number;
@@ -12,7 +12,7 @@ interface RateLimitOptions {
  */
 export const rateLimiter = (options: RateLimitOptions) => {
     return async (req: Request, res: Response, next: NextFunction) => {
-        if (!redisClient || !redisClient.isOpen) {
+        if (redis.status !== 'ready') {
             // Pass through if Redis is disabled/down
             return next();
         }
@@ -22,30 +22,30 @@ export const rateLimiter = (options: RateLimitOptions) => {
             const identifier = req.user?.uid || req.ip || 'unknown';
             const key = `rate-limit:${req.originalUrl}:${identifier}`;
 
-            const requests = await redisClient.incr(key);
+            const requests = await redis.incr(key);
 
             if (requests === 1) {
                 // First request in this window, set expiry
-                await redisClient.expire(key, options.windowSeconds);
+                await redis.expire(key, options.windowSeconds);
             } else {
                 // Ensure TTL exists in case of race condition
-                const ttl = await redisClient.ttl(key);
-                if (ttl === -1) {
-                    await redisClient.expire(key, options.windowSeconds);
+                const currentTtl = await redis.ttl(key);
+                if (currentTtl === -1) {
+                    await redis.expire(key, options.windowSeconds);
                 }
             }
 
-            const ttl = await redisClient.ttl(key);
+            const finalTtl = await redis.ttl(key);
 
             // Set headers indicating rate limit
             res.setHeader('X-RateLimit-Limit', options.maxRequests);
             res.setHeader('X-RateLimit-Remaining', Math.max(0, options.maxRequests - requests));
-            res.setHeader('X-RateLimit-Reset', Date.now() + ttl * 1000);
+            res.setHeader('X-RateLimit-Reset', Date.now() + finalTtl * 1000);
 
             if (requests > options.maxRequests) {
                 return res.status(429).json({
                     error: 'Too Many Requests',
-                    retryAfter: ttl
+                    retryAfter: finalTtl
                 });
             }
 

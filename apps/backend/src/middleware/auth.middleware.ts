@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { authAdmin } from '../config/firebase';
-import { prisma } from '../db/prisma';
+import { authAdmin } from '@farmassist/firebase-admin';
+import { prisma } from '@farmassist/database';
 
 // Extend Express Request to include user details
 declare global {

@@ -1,0 +1,8 @@
+{
+  "name": "@farmassist/database",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@prisma/client": "^7.4.2"
+  }
+}
