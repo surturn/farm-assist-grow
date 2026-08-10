@@ -22,7 +22,38 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env.local
+
+# Build artifacts
+*.tsbuildinfo
+
+# Secrets and local environment
 .env
+.env.*
+!.env.example
 serviceAccountKey.json
+
+# Runtime-uploaded user media (never source)
 /public/uploads
+/apps/backend/public/avatars/
+
+# Python / ML environment
+/AImodel/venv
+/AImodel/__pycache__
+/AImodel/*.pyc
+/AImodel/*.pyo
+
+# ML datasets — ~136k images across these trees. Never commit.
+# Training scripts and data.yaml ARE tracked; the image corpora are not.
+/AImodel/Dataset for Crop Pest and Disease Detection/
+/AImodel/KenyaCropDisease/
+/AImodel/KenyaCropDisease_v2/
+/AImodel/PlantDoc1/
+/AImodel/PlantDoc2/
+/AImodel/runs/
+/AImodel/*.pt
+
+# Generated directory dumps
+/AImodel/structure.txt
+
+# Stray tool caches written into the repo root
+/Microsoft/
