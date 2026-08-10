@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://farmassist-backend:5000',
         changeOrigin: true,
       }
     }

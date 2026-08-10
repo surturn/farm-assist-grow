@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { FarmProvider } from "@/contexts/FarmContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./features/auth/Login";
 import SignUp from "./features/auth/SignUp";
@@ -17,6 +19,10 @@ import Settings from "./pages/Settings";
 import Notifications from "./features/notifications/Notifications";
 import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
+import FarmLogs from "./pages/FarmLogs";
+import TodoList from "./pages/TodoList";
+import AgrovetMarketplace from "./pages/Agrovet";
+import Shop from "./pages/Shop";
 
 const queryClient = new QueryClient();
 
@@ -25,24 +31,30 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/scan" element={<Scan />} />
-            <Route path="/farms" element={<Farms />} />
-            <Route path="/planning" element={<Planning />} />
-            <Route path="/trees" element={<Trees />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/subscription" element={<Subscription />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <FarmProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/scan" element={<ProtectedRoute><Scan /></ProtectedRoute>} />
+              <Route path="/farms" element={<ProtectedRoute><Farms /></ProtectedRoute>} />
+              <Route path="/crop-planner" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
+              <Route path="/planning" element={<ProtectedRoute><TodoList /></ProtectedRoute>} />
+              <Route path="/farm-logs" element={<ProtectedRoute><FarmLogs /></ProtectedRoute>} />
+              <Route path="/trees" element={<ProtectedRoute><Trees /></ProtectedRoute>} />
+              <Route path="/agrovet" element={<ProtectedRoute><AgrovetMarketplace /></ProtectedRoute>} />
+              <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </FarmProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

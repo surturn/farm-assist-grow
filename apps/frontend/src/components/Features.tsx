@@ -1,222 +1,171 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Cloud, BarChart3, Smartphone, Leaf, Droplets, TrendingUp } from "lucide-react";
-import anime from "animejs";
-import GrowingPlant from "./animations/GrowingPlant";
+import { CheckCircle2, Leaf, MoreHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-const features = [
-  {
-    icon: Cloud,
-    title: "Weather Intelligence",
-    description: "Real-time weather data and forecasts to optimize planting and harvesting schedules."
-  },
-  {
-    icon: BarChart3,
-    title: "Crop Analytics",
-    description: "Advanced analytics to monitor crop health, predict yields, and maximize productivity."
-  },
-  {
-    icon: Smartphone,
-    title: "Mobile Access",
-    description: "Manage your farm from anywhere with our responsive mobile-first platform."
-  },
-  {
-    icon: Leaf,
-    title: "Sustainability Tracking",
-    description: "Monitor and improve your farm's environmental impact with detailed sustainability metrics."
-  },
-  {
-    icon: Droplets,
-    title: "Smart Irrigation",
-    description: "Optimize water usage with intelligent irrigation scheduling based on soil moisture and weather."
-  },
-  {
-    icon: TrendingUp,
-    title: "Market Insights",
-    description: "Access market trends and pricing data to make informed decisions about crop sales."
-  }
-];
-
-const Features = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [hasAnimated, setHasAnimated] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-
-          // Animate Feature Cards (Slide up and fade in)
-          anime({
-            targets: ".feature-card",
-            translateY: [60, 0],
-            opacity: [0, 1],
-            easing: "easeOutExpo",
-            duration: 1200,
-            delay: anime.stagger(150), // Stagger by 150ms
-          });
-
-          // Animate Background SVG Lines slowly (Draw effect)
-          anime({
-            targets: ".bg-field-line",
-            strokeDashoffset: [anime.setDashoffset, 0],
-            easing: "easeInOutSine",
-            duration: 4000,
-            delay: anime.stagger(400),
-          });
-
-          // Animate Floating leaves (gentle sway and float)
-          anime({
-            targets: ".floating-leaf",
-            translateY: [-20, 20],
-            rotate: [-10, 10],
-            direction: "alternate",
-            loop: true,
-            easing: "easeInOutSine",
-            duration: 8000,
-            delay: anime.stagger(1000),
-          });
-
-          // Header slide up
-          anime({
-            targets: ".features-header",
-            translateY: [40, 0],
-            opacity: [0, 1],
-            easing: "easeOutExpo",
-            duration: 1200,
-          });
-        }
-      },
-      { threshold: 0.15 } // Trigger when 15% of section is visible
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasAnimated]);
+export default function Features() {
+  const features = [
+    "Local Weather & Rainfall Forecasts",
+    "Crop Health Monitoring (AI-Powered)",
+    "Kenyan Market Prices & Trends",
+    "Smart Irrigation & Water Management",
+    "Pest & Disease Identification",
+    "Offline Mode & Kiswahili Support"
+  ];
 
   return (
-    <section ref={sectionRef} className="py-32 relative bg-slate-50 overflow-hidden">
-      {/* Top Soil Horizon Curve */}
-      <div className="absolute top-0 left-0 w-full overflow-hidden leading-none rotate-180 z-0">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[40px] md:h-[60px] text-background fill-current">
-          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
-        </svg>
-      </div>
+    <section className="py-24 bg-green-50/30 overflow-hidden" id="features">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-16">
+          
+          {/* Left Side: Features List */}
+          <div className="w-full lg:w-1/2 relative z-10">
+            <Badge className="bg-green-100 text-green-800 hover:bg-green-200 uppercase text-xs font-bold tracking-wider mb-6 px-3 py-1 border-none shadow-none">
+              + THE SOLUTION
+            </Badge>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">
+              All-in-One Platform,<br/>
+              Built for Kenya.
+            </h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-md">
+              Get real-time insights and recommendations tailored to Kenyan farms and conditions.
+            </p>
+            
+            <div className="space-y-4 mb-10">
+              {features.map((feature, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0" />
+                  <span className="text-gray-800 font-medium text-lg">{feature}</span>
+                </div>
+              ))}
+            </div>
 
-      {/* Floating Leaf Motifs */}
-      <div className="absolute top-1/4 left-[5%] opacity-[0.04] pointer-events-none floating-leaf text-emerald-700">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17 8C17 8 21 8 21 12.5C21 15 19 19 12 21C12 21 12 11 17 8Z" />
-          <path d="M7 8C7 8 3 8 3 12.5C3 15 5 19 12 21C12 21 12 11 7 8Z" />
-        </svg>
-      </div>
-      <div className="absolute bottom-1/4 right-[5%] opacity-[0.04] pointer-events-none floating-leaf text-teal-700" style={{ transform: "scaleX(-1)" }}>
-        <svg width="100" height="100" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17 8C17 8 21 8 21 12.5C21 15 19 19 12 21C12 21 12 11 17 8Z" />
-          <path d="M7 8C7 8 3 8 3 12.5C3 15 5 19 12 21C12 21 12 11 7 8Z" />
-        </svg>
-      </div>
-      <div className="absolute top-1/2 left-[80%] opacity-[0.03] pointer-events-none floating-leaf text-emerald-800 rotate-45">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17 8C17 8 21 8 21 12.5C21 15 19 19 12 21C12 21 12 11 17 8Z" />
-        </svg>
-      </div>
-
-      {/* Animated Background SVG (Subtle Crop Fields / Soil Lines) */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] text-emerald-800">
-        <svg
-          className="w-full h-full"
-          preserveAspectRatio="none"
-          viewBox="0 0 1440 800"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Dashed lines resembling tilled soil rows */}
-          <path className="bg-field-line" d="M -100 200 Q 300 120 700 280 T 1600 200" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="12 12" strokeLinecap="round" />
-          <path className="bg-field-line" d="M -100 400 Q 400 320 800 520 T 1600 400" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray="12 12" strokeLinecap="round" />
-          <path className="bg-field-line" d="M -100 600 Q 500 520 900 720 T 1600 600" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="12 12" strokeLinecap="round" />
-        </svg>
-      </div>
-
-      {/* Bottom Soil Horizon Curve */}
-      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none z-0">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[40px] md:h-[60px] text-background fill-current">
-          <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
-        </svg>
-      </div>
-
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="features-header text-center mb-20 opacity-0 relative">
-
-          {/* Plant animation near header */}
-          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-28 h-28 md:-translate-x-[240px] opacity-90 z-0">
-            {/* Only render plant animation if the observer has triggered to run synchronously */}
-            {hasAnimated && <GrowingPlant />}
+            {/* Crops We Support Widget */}
+            <div className="bg-white border border-green-100 rounded-2xl p-5 shadow-sm max-w-md">
+              <h4 className="text-sm font-bold text-green-800 mb-4 underline decoration-green-300 underline-offset-4">Crops We Support</h4>
+              <div className="flex flex-wrap gap-3">
+                {['Maize', 'Beans', 'Potatoes', 'Kale', 'Tomatoes'].map(crop => (
+                  <div key={crop} className="flex items-center gap-1.5 text-sm font-medium text-gray-700 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-100">
+                    <Leaf className="h-3.5 w-3.5 text-green-600" /> {crop}
+                  </div>
+                ))}
+                <div className="flex items-center gap-1.5 text-sm font-medium text-gray-400 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-100 border-dashed">
+                  <MoreHorizontal className="h-3.5 w-3.5" /> more
+                </div>
+              </div>
+            </div>
           </div>
 
-          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight relative z-10">
-            Everything You Need for{" "}
-            <span className="bg-gradient-to-r from-emerald-500 to-teal-400 bg-clip-text text-transparent">
-              Modern Farming
-            </span>
-          </h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed relative z-10">
-            Elevate your agricultural operations with intelligent, data-driven tools designed for scale and sustainability.
-          </p>
-        </div>
+          {/* Right Side: Phone + Dashboard side by side */}
+          <div className="w-full lg:w-1/2 mt-12 lg:mt-0">
+            <div className="flex items-center justify-center gap-6">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 xl:gap-10">
-          {features.map((feature, index) => {
-            const isHighlighted = feature.title === "Crop Analytics";
-
-            return (
-              <Card
-                key={index}
-                className={`feature-card opacity-0 group relative overflow-hidden transition-all duration-500 
-                  hover:-translate-y-3 hover:shadow-[0_20px_40px_-15px_rgba(16,185,129,0.2)]
-                  ${isHighlighted
-                    ? 'border-emerald-500/30 shadow-emerald-500/10 shadow-xl md:-translate-y-2 md:hover:-translate-y-5 bg-gradient-to-br from-white to-emerald-50/50 transform md:scale-105 z-10'
-                    : 'border-slate-200 hover:border-emerald-500/20 bg-white'}`}
-              >
-                {/* Subtle gradient overlay on hover for normal cards */}
-                {!isHighlighted && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent to-emerald-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                )}
-
-                {/* Highlight badge for the emphasized card */}
-                {isHighlighted && (
-                  <div className="absolute top-0 right-0 z-20">
-                    <div className="bg-gradient-to-r from-emerald-500 to-teal-400 text-white text-[10px] font-bold tracking-wider uppercase py-1.5 px-4 rounded-bl-xl shadow-sm">
-                      Most Powerful
+              {/* Mobile Phone Mockup - standalone */}
+              <div className="shrink-0 w-[220px] h-[440px] bg-white rounded-[2.5rem] border-[6px] border-gray-900 shadow-2xl overflow-hidden hidden md:block">
+                <div className="bg-green-900 text-white p-4 pt-8 pb-5">
+                  <h3 className="font-bold text-base mb-1">Hello, Farmer! 👋</h3>
+                  <p className="text-[10px] text-green-100 opacity-80">Here is your farm overview today.</p>
+                </div>
+                <div className="p-3 bg-gray-50 h-full">
+                  <h4 className="font-bold text-gray-800 text-xs mb-3">Farm Overview</h4>
+                  <div className="space-y-2">
+                    <div className="bg-white p-2.5 rounded-lg flex justify-between items-center shadow-sm border border-gray-100">
+                      <div className="flex items-center gap-1.5 text-[11px]"><Leaf className="h-3.5 w-3.5 text-green-600"/> Crop Health</div>
+                      <div className="text-right"><div className="font-bold text-green-700 text-[11px]">88%</div><div className="text-[8px] text-gray-400">Good</div></div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg flex justify-between items-center shadow-sm border border-gray-100">
+                      <div className="flex items-center gap-1.5 text-[11px]"><Leaf className="h-3.5 w-3.5 text-blue-500"/> Soil Moisture</div>
+                      <div className="text-right"><div className="font-bold text-green-700 text-[11px]">Optimal</div><div className="text-[8px] text-gray-400">Good</div></div>
                     </div>
                   </div>
-                )}
-
-                <CardContent className="p-8 sm:p-10 relative z-10">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 shadow-sm
-                    ${isHighlighted
-                      ? 'bg-gradient-to-br from-emerald-500 to-teal-400 shadow-emerald-500/40 text-white'
-                      : 'bg-emerald-100/80 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-emerald-500/30'}`}
-                  >
-                    <feature.icon className="w-7 h-7" />
+                  
+                  <div className="mt-4 bg-green-50 p-3 rounded-lg border border-green-100">
+                    <h4 className="font-bold text-green-900 text-[10px] mb-1">Today's Recommendation</h4>
+                    <p className="text-[9px] text-green-800 leading-tight">Apply CAN fertilizer this week for better yields.</p>
+                    <button className="mt-2.5 w-full bg-green-700 text-white rounded-md py-1.5 text-[10px] font-bold shadow-sm">View Details</button>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-800 mb-4 group-hover:text-emerald-700 transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-slate-600 leading-relaxed text-base">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+              </div>
+
+              {/* Dashboard Mockup */}
+              <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl border border-gray-200 overflow-hidden flex h-[440px]">
+                
+                {/* Sidebar Mockup */}
+                <div className="w-[140px] bg-green-950 text-white p-4 hidden lg:block shrink-0">
+                  <div className="font-bold text-sm mb-8 text-white">Dashboard</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 bg-green-900/50 p-2 rounded-lg border border-green-800 text-[11px] font-medium">
+                      <Leaf className="h-3.5 w-3.5 text-green-400" /> Overview
+                    </div>
+                    {['Environment', 'My Crops', 'Market', 'Irrigation', 'Inputs', 'Alerts', 'Settings'].map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 text-[11px] text-green-200/70 hover:text-white transition-colors">
+                        <div className="h-3 w-3 border border-green-500/50 rounded-sm shrink-0"></div> {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Main Content Mockup */}
+                <div className="flex-1 p-5 bg-gray-50/50 flex flex-col overflow-hidden">
+                  <div className="flex justify-between items-center mb-5">
+                    <h3 className="text-base font-bold text-gray-900">Overview</h3>
+                    <Badge variant="outline" className="text-[10px] bg-white px-2 py-0.5">Nakuru County ▾</Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                      <div className="text-[10px] text-gray-500 mb-1">Crop Health</div>
+                      <div className="text-xl font-bold text-green-700">88%</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">Good</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                      <div className="text-[10px] text-gray-500 mb-1">Soil Moisture</div>
+                      <div className="text-lg font-bold text-green-700">Optimal</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm mb-4 flex-1 flex flex-col">
+                    <div className="text-xs font-semibold mb-2">Yield Trend</div>
+                    <div className="flex-1 relative w-full mt-2">
+                      <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                        <path d="M0,20 Q10,25 20,15 T40,25 T60,10 T80,20 T100,5" fill="none" stroke="#16a34a" strokeWidth="2" />
+                        <circle cx="20" cy="15" r="1.5" fill="#16a34a" />
+                        <circle cx="40" cy="25" r="1.5" fill="#16a34a" />
+                        <circle cx="60" cy="10" r="1.5" fill="#16a34a" />
+                        <circle cx="80" cy="20" r="1.5" fill="#16a34a" />
+                        <circle cx="100" cy="5" r="1.5" fill="#16a34a" />
+                      </svg>
+                      <div className="absolute -bottom-3 left-0 w-full flex justify-between text-[7px] text-gray-400">
+                        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                    <div className="text-xs font-semibold mb-2">Market Prices (Today)</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <div className="text-[9px] text-gray-500">Maize (90kg)</div>
+                        <div className="font-bold text-xs">KSh 3,200</div>
+                        <div className="text-[9px] text-green-500">+4%</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] text-gray-500">Beans (90kg)</div>
+                        <div className="font-bold text-xs">KSh 5,800</div>
+                        <div className="text-[9px] text-red-500">-2%</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] text-gray-500">Potatoes (50kg)</div>
+                        <div className="font-bold text-xs">KSh 2,400</div>
+                        <div className="text-[9px] text-green-500">+3%</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
-};
-
-export default Features;
+}
