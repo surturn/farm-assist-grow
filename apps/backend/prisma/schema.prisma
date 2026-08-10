@@ -7,26 +7,26 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  firebaseUid   String         @unique
-  email         String         @unique
-  displayName   String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  farmMemberships FarmMember[]
-  tasks         Task[]
-  notifications Notification[]
+  id                String         @id
+  email             String         @unique
+  firstName         String?
+  lastName          String?
+  phone             String?
+  preferredLanguage String         @default("en")
+  region            String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  tenantMemberships TenantUser[]
+  tasks             Task[]
+  notifications     Notification[]
+  scans             Scan[]
+  farmNotes         FarmNote[]
 }
 
-model Farm {
-  id          String       @id @default(uuid())
-  name        String
-  location    String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  members     FarmMember[]
-  crops       Crop[]
-  tasks       Task[]
+enum TenantType {
+  FARM
+  AGROVET
+  SACCO
 }
 
 enum Role {
@@ -36,34 +36,59 @@ enum Role {
   VIEWER
 }
 
-model FarmMember {
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  type        TenantType
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  members     TenantUser[]
+  farms       Farm[]
+  agrovets    Agrovet[]
+}
+
+model TenantUser {
   id        String   @id @default(uuid())
-  farmId    String
+  tenantId  String
   userId    String
   role      Role     @default(MEMBER)
   joinedAt  DateTime @default(now())
-  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([farmId, userId])
+  @@unique([tenantId, userId])
+}
+
+model Farm {
+  id          String       @id @default(uuid())
+  tenantId    String
+  name        String
+  location    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  crops       Crop[]
+  tasks       Task[]
+  scans       Scan[]
+  notes       FarmNote[]
 }
 
 model Crop {
-  id          String   @id @default(uuid())
-  farmId      String
-  name        String
-  type        String
-  plantedAt   DateTime?
+  id              String    @id @default(uuid())
+  farmId          String
+  name            String
+  type            String
+  plantedAt       DateTime?
   expectedHarvest DateTime?
-  status      String   @default("GROWING") // GROWING, HARVESTED, DISEASED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  status          String    @default("GROWING") // GROWING, HARVESTED, DISEASED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  farm            Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
 }
 
 model Task {
   id          String    @id @default(uuid())
-  farmId      String
+  farmId      String?
   title       String
   description String?
   status      String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
@@ -71,15 +96,72 @@ model Task {
   dueDate     DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  farm        Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  farm        Farm?     @relation(fields: [farmId], references: [id], onDelete: Cascade)
   assignee    User?     @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
 }
 
 model Notification {
   id        String   @id @default(uuid())
   userId    String
+  title     String?
   message   String
+  type      String   @default("INFO") // ALERT, INFO
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Scan {
+  id            String   @id @default(uuid())
+  userId        String
+  farmId        String?
+  imageUrl      String?
+  diseaseName   String?
+  confidence    Float?
+  treatment     String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farm          Farm?    @relation(fields: [farmId], references: [id], onDelete: SetNull)
+}
+
+model FarmNote {
+  id          String   @id @default(uuid())
+  farmId      String
+  userId      String
+  note        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Agrovet {
+  id          String   @id @default(uuid())
+  tenantId    String   @unique
+  name        String
+  location    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products    Product[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  agrovetId   String
+  name        String
+  description String?
+  price       Float
+  category    String   // SEED, FERTILIZER, PESTICIDE
+  inStock     Boolean  @default(true)
+  agrovet     Agrovet  @relation(fields: [agrovetId], references: [id], onDelete: Cascade)
+}
+
+model NewsItem {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  source      String?
+  category    String?  // SUBSIDY, ALERT, TENDER, GENERAL
+  publishedAt DateTime @default(now())
 }

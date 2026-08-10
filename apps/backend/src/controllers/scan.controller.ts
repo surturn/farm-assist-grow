@@ -1,23 +1,25 @@
 import { Request, Response } from 'express';
-import { dbAdmin } from '@farmassist/firebase-admin';
-import * as admin from 'firebase-admin';
+import { prisma } from '@farmassist/database';
+// In a real app we'd import the aiService here, but keeping it simple for the controller
 
 export const getScans = async (req: Request, res: Response): Promise<any> => {
     try {
-        const userId = req.user?.uid;
+        const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const limitQuery = req.query.limit ? parseInt(req.query.limit as string) : 50;
+        const farmId = req.query.farmId as string | undefined;
 
-        const scansSnapshot = await dbAdmin.collection('scans')
-            .where('userId', '==', userId)
-            .orderBy('createdAt', 'desc')
-            .limit(limitQuery)
-            .get();
-        
-        const scans = scansSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const scans = await prisma.scan.findMany({
+            where: { 
+                userId,
+                ...(farmId ? { farmId } : {})
+            },
+            orderBy: { createdAt: 'desc' },
+            take: limitQuery
+        });
 
         return res.status(200).json(scans);
     } catch (error: any) {
@@ -28,20 +30,25 @@ export const getScans = async (req: Request, res: Response): Promise<any> => {
 
 export const createScan = async (req: Request, res: Response): Promise<any> => {
     try {
-        const userId = req.user?.uid;
+        const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const scanData = req.body;
+        const { farmId, imageUrl, diseaseName, confidence, treatment } = req.body;
         
-        const docRef = await dbAdmin.collection('scans').add({
-            ...scanData,
-            userId,
-            createdAt: admin.firestore.Timestamp.now()
+        const newScan = await prisma.scan.create({
+            data: {
+                userId,
+                farmId: farmId || null,
+                imageUrl,
+                diseaseName,
+                confidence,
+                treatment
+            }
         });
 
-        return res.status(201).json({ id: docRef.id, ...scanData });
+        return res.status(201).json(newScan);
     } catch (error: any) {
         console.error('Create Scan Error:', error);
         return res.status(500).json({ error: 'Failed to create scan', details: error.message });

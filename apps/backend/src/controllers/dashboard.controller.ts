@@ -1,61 +1,91 @@
 import { Request, Response } from 'express';
-import { dbAdmin } from '@farmassist/firebase-admin';
 import { prisma } from '@farmassist/database';
 
 export const getDashboardData = async (req: Request, res: Response): Promise<any> => {
     try {
-        const userId = req.user?.uid;
+        const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        // Fetch User Profile
-        const userDoc = await dbAdmin.collection('users').doc(userId).get();
-        const userData = userDoc.exists ? userDoc.data() : {};
-        const userRegion = userData?.location || 'Central Kenya';
-        const systemMode = userData?.systemMode || 'basic'; // "basic", "iot", or "hybrid"
+        // Fetch User Profile from Prisma
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+        const userRegion = user?.region || 'Central Kenya';
+        const systemMode = 'basic'; // Default for MVP
 
-        // Fetch Notifications
-        const notifSnapshot = await dbAdmin.collection('notifications')
-            .where('userId', '==', userId)
-            .orderBy('createdAt', 'desc')
-            .get();
+        const farmId = req.query.farmId as string | undefined;
 
-        const alerts = notifSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        const unreadCount = alerts.filter((a: any) => !a.read).length;
+        // Fetch User's Farms
+        const userFarms = await prisma.farm.findMany({
+            where: { tenant: { members: { some: { userId } } } },
+            select: { id: true, name: true, location: true }
+        });
 
-        // Fetch Scans
-        const scansSnapshot = await dbAdmin.collection('scans')
-            .where('userId', '==', userId)
-            .orderBy('createdAt', 'desc')
-            .limit(5)
-            .get();
+        // Fetch Notifications from Prisma
+        const alerts = await prisma.notification.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        });
+        const unreadCount = await prisma.notification.count({
+            where: { userId, read: false }
+        });
 
-        const scans = scansSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Fetch Scans from Prisma
+        const scans = await prisma.scan.findMany({
+            where: { userId, ...(farmId ? { farmId } : {}) },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        });
+        const totalScans = await prisma.scan.count({
+            where: { userId, ...(farmId ? { farmId } : {}) }
+        });
 
-        const scansSnapshotAll = await dbAdmin.collection('scans')
-            .where('userId', '==', userId)
-            .get();
+        // Fetch News Items
+        const news = await prisma.newsItem.findMany({
+            orderBy: { publishedAt: 'desc' },
+            take: 5
+        });
 
-        const totalScans = scansSnapshotAll.size;
+        // Fetch Dynamic Stats
+        const farmsCount = userFarms.length;
+        const cropsCount = await prisma.crop.count({
+             where: { farm: farmId ? { id: farmId } : { tenant: { members: { some: { userId } } } } }
+        });
+        const tasksCount = await prisma.task.count({
+            where: { 
+                assignee: { id: userId }, 
+                status: { not: "COMPLETED" },
+                ...(farmId ? { farmId } : {})
+            }
+        });
 
-        // In a real app we would compute or fetch recommendations based on scans/weather
+        // Recommendations (Can be dynamic based on recent scans)
         const recommendations = [
             { id: "1", title: "Apply Copper Fungicide", desc: "Based on recent Early Blight detection" }
         ];
 
         return res.status(200).json({
+            user: {
+                firstName: user?.firstName,
+                lastName: user?.lastName
+            },
             totalScans,
             recentScans: scans,
-            alerts: alerts.slice(0, 5),
+            alerts,
+            news,
             recommendations,
             userRegion,
             systemMode,
+            farms: userFarms,
+            activeFarmId: farmId || (userFarms.length > 0 ? userFarms[0].id : null),
             stats: {
                 alerts: unreadCount,
-                farms: 1,
-                crops: 5,
-                trees: 12
+                farms: farmsCount,
+                crops: cropsCount,
+                pendingTasks: tasksCount
             }
         });
     } catch (error: any) {

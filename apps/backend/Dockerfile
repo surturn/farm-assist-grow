@@ -1,33 +1,45 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS base
 
 WORKDIR /app
 
-# Copy the monorepo essential configs
-COPY package*.json ./
-COPY backend/package*.json ./backend/
+# Copy every workspace manifest first so npm can resolve the monorepo layout.
+COPY package.json package-lock.json ./
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY apps/frontend/package.json ./apps/frontend/package.json
+COPY packages/ai/package.json ./packages/ai/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY packages/firebase-admin/package.json ./packages/firebase-admin/package.json
+COPY packages/shared-types/package.json ./packages/shared-types/package.json
+COPY infrastructure/queue/package.json ./infrastructure/queue/package.json
+COPY infrastructure/redis/package.json ./infrastructure/redis/package.json
 
-# Install dependencies exclusively for the backend to build
-RUN npm install --workspace=backend
+RUN npm ci
 
-COPY backend/ ./backend/
-COPY .env.local ./
+COPY apps ./apps
+COPY packages ./packages
+COPY infrastructure ./infrastructure
 
-WORKDIR /app/backend
-# Generate Prisma Client & compile typescript
-RUN npx prisma generate
-RUN npm run build
+# ----- DEV STAGE -----
+FROM base AS dev
+WORKDIR /app/apps/backend
 
-# Production Stage
-FROM node:20-alpine
-WORKDIR /app
+RUN ../../node_modules/.bin/prisma generate
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/backend/package*.json ./backend/
-COPY --from=builder /app/backend/dist ./backend/dist
-COPY --from=builder /app/backend/node_modules ./backend/node_modules
-COPY --from=builder /app/.env.local ./
-
-WORKDIR /app/backend
+ENV NODE_ENV=development
 
 EXPOSE 5000
-CMD ["npm", "start"]
+
+# Using tsx watch for hot module replacement in development
+CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --schema prisma/schema.prisma --accept-data-loss && exec ../../node_modules/.bin/tsx watch src/server.ts"]
+
+# ----- PROD STAGE -----
+FROM base AS prod
+WORKDIR /app/apps/backend
+
+RUN ../../node_modules/.bin/prisma generate
+
+ENV NODE_ENV=production
+
+EXPOSE 5000
+
+CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --schema prisma/schema.prisma --accept-data-loss && exec ../../node_modules/.bin/tsx src/server.ts"]

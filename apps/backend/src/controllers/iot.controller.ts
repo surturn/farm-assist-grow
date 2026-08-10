@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbAdmin } from '@farmassist/firebase-admin';
 import * as admin from 'firebase-admin';
+import { prisma } from '@farmassist/database';
 
 export const ingestTelemetry = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -10,16 +11,15 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<any>
             return res.status(400).json({ error: 'Missing deviceId or farmId' });
         }
 
-        // Validate device registration (in a real app, verify ownership)
+        // Validate device registration in Firestore
         const deviceRef = dbAdmin.collection('devices').doc(deviceId);
         const deviceDoc = await deviceRef.get();
         
         if (!deviceDoc.exists) {
-           // Optionally auto-register or reject. We'll register for this demo.
            await deviceRef.set({ farmId, registeredAt: admin.firestore.Timestamp.now() });
         }
 
-        // Store reading
+        // Store raw reading in Firestore (Time-series / High velocity)
         const readingData = {
             deviceId,
             farmId,
@@ -32,17 +32,35 @@ export const ingestTelemetry = async (req: Request, res: Response): Promise<any>
 
         await dbAdmin.collection('sensorReadings').add(readingData);
 
-        // Optionally generate alert if threshold exceeded
+        // Alert Evaluation Engine
         if (soilMoisture < 30) {
-            await dbAdmin.collection('alerts').add({
-                farmId,
-                deviceId,
-                title: 'Low Soil Moisture',
-                message: `Device ${deviceId} reported critically low soil moisture (${soilMoisture}%).`,
-                severity: 'high',
-                createdAt: admin.firestore.Timestamp.now(),
-                read: false
+            // Find the owner of the farm to notify
+            const farm = await prisma.farm.findUnique({
+                where: { id: farmId },
+                include: {
+                    tenant: {
+                        include: {
+                            members: {
+                                where: { role: 'OWNER' }
+                            }
+                        }
+                    }
+                }
             });
+
+            const ownerId = farm?.tenant?.members?.[0]?.userId;
+
+            if (ownerId) {
+                // Write breach directly into PostgreSQL notifications table
+                await prisma.notification.create({
+                    data: {
+                        userId: ownerId,
+                        title: 'Low Soil Moisture Alert',
+                        message: `Device ${deviceId} on farm '${farm.name}' reported critically low soil moisture (${soilMoisture}%).`,
+                        type: 'ALERT'
+                    }
+                });
+            }
         }
 
         return res.status(201).json({ success: true, message: 'Telemetry processed' });
