@@ -43,23 +43,8 @@ export default function AgrovetMarketplace() {
       setAgrovets(data || []);
     } catch (error) {
       console.error("Failed to fetch agrovets", error);
-      // Fallback Mock Data for UI demonstration
-      setAgrovets([
-        {
-          id: '1', name: 'Mkulima Bora Agrovet', location: 'Nairobi Central', contactNumber: '+254711223344', rating: 4.8,
-          products: [
-            { id: 'p1', name: 'NPK Fertilizer 50kg', category: 'Fertilizer', price: 3500, inStock: true },
-            { id: 'p2', name: 'Dudu Dust 500g', category: 'Pesticide', price: 450, inStock: true }
-          ]
-        },
-        {
-          id: '2', name: 'Green Harvest Supplies', location: 'Nakuru Town', contactNumber: '+254722334455', rating: 4.5,
-          products: [
-            { id: 'p3', name: 'Tomato Seeds (Hybrid)', category: 'Seeds', price: 1200, inStock: true },
-            { id: 'p4', name: 'Fungicide Pro', category: 'Fungicide', price: 850, inStock: false }
-          ]
-        }
-      ]);
+      setAgrovets([]);
+      toast.error("Failed to load agrovets");
     } finally {
       setLoading(false);
     }

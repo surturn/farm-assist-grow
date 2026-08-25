@@ -42,38 +42,49 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
         };
 
         if (!dbUser) {
-            console.warn(`Authenticated Firebase User ${decodedToken.uid} missing from local PostgreSQL Database. Re-creating...`);
-            
-            // Create user
-            const newUser = await prisma.user.create({
-                data: {
-                    id: decodedToken.uid,
-                    email: decodedToken.email || `${decodedToken.uid}@placeholder.email`,
-                    firstName: decodedToken.name?.split(' ')[0] || 'New',
-                    lastName: decodedToken.name?.split(' ').slice(1).join(' ') || 'Farmer',
-                    phone: decodedToken.phone_number || null,
-                }
-            });
+            console.warn(`Authenticated Firebase User ${decodedToken.uid} missing from local PostgreSQL Database. Provisioning...`);
 
-            // Automatically create a default Farm Tenant for them
-            await prisma.tenant.create({
-                data: {
-                    name: 'My Personal Farm',
-                    type: 'FARM',
-                    members: {
-                        create: {
-                            userId: newUser.id,
-                            role: 'OWNER'
+            // The user row and their default tenant must land together. Created
+            // separately, a failure between the two would leave an account that
+            // owns no farm and never gets provisioned again, because the next
+            // request finds the user and skips this branch entirely.
+            try {
+                await prisma.$transaction(async (tx) => {
+                    await tx.user.create({
+                        data: {
+                            id: decodedToken.uid,
+                            email: decodedToken.email || `${decodedToken.uid}@placeholder.email`,
+                            firstName: decodedToken.name?.split(' ')[0] || 'New',
+                            lastName: decodedToken.name?.split(' ').slice(1).join(' ') || 'Farmer',
+                            phone: decodedToken.phone_number || null,
                         }
-                    },
-                    farms: {
-                        create: {
-                            name: 'Main Field',
-                            location: 'Kenya'
+                    });
+
+                    await tx.tenant.create({
+                        data: {
+                            name: 'My Personal Farm',
+                            type: 'FARM',
+                            members: {
+                                create: {
+                                    userId: decodedToken.uid,
+                                    role: 'OWNER'
+                                }
+                            },
+                            farms: {
+                                create: {
+                                    name: 'Main Field',
+                                    location: 'Kenya'
+                                }
+                            }
                         }
-                    }
-                }
-            });
+                    });
+                });
+            } catch (provisionError: any) {
+                // Two concurrent first requests race here. The loser hits a unique
+                // constraint on the user id, which means the winner has already
+                // provisioned this account — a success for our purposes.
+                if (provisionError?.code !== 'P2002') throw provisionError;
+            }
         }
 
         next();

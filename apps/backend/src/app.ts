@@ -37,6 +37,7 @@ import iotRoutes from './routes/iot.routes';
 import userRoutes from './routes/user.routes';
 import taskRoutes from './routes/task.routes';
 import farmnoteRoutes from './routes/farmnote.routes';
+import agrovetRoutes from './routes/agrovet.routes';
 import path from 'path';
 
 app.use('/api/v1/public', express.static(path.join(__dirname, '../public')));
@@ -52,6 +53,7 @@ app.use('/api/v1/iot', iotRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/tasks', taskRoutes);
 app.use('/api/v1/farm-notes', farmnoteRoutes);
+app.use('/api/v1/agrovets', agrovetRoutes);
 /**
  * Global Error Handler Middleware
  */

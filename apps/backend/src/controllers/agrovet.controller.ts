@@ -33,22 +33,3 @@ export const searchProducts = async (req: Request, res: Response): Promise<any> 
         return res.status(500).json({ error: 'Failed to search products' });
     }
 };
-
-export const reserveProduct = async (req: Request, res: Response): Promise<any> => {
-    try {
-        const userId = req.user?.id;
-        if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-
-        // MVP Mockup: Just return success for ordering/reserving
-        const { productId, type } = req.body; // type = 'RESERVE' | 'ORDER'
-
-        return res.status(200).json({ 
-            success: true, 
-            message: type === 'RESERVE' ? 'Reserved for pickup' : 'Order placed successfully',
-            productId
-        });
-    } catch (error: any) {
-        console.error('Reserve Product Error:', error);
-        return res.status(500).json({ error: 'Failed to process order' });
-    }
-};
