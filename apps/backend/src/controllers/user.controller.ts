@@ -10,9 +10,12 @@ export const uploadAvatar = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const { uid } = req.body;
+    // Derive the owner from the verified token, never from the request body.
+    // A body-supplied uid would let any caller write outside the avatars
+    // directory via path traversal, or overwrite another user's avatar.
+    const uid = req.user?.id;
     if (!uid) {
-      res.status(400).json({ error: 'User ID (uid) is required' });
+      res.status(401).json({ error: 'Unauthorized' });
       return;
     }
 
@@ -39,15 +42,11 @@ export const uploadAvatar = async (req: Request, res: Response): Promise<void> =
     // Return the relative URL
     const avatarUrl = `/api/v1/public/avatars/${filename}?t=${Date.now()}`;
     
-    // Also update the database if we have a user
-    const userId = req.user?.id;
-    if (userId) {
-      const { prisma } = require('@farmassist/database');
-      await prisma.user.update({
-        where: { id: userId },
-        data: { avatarUrl }
-      });
-    }
+    const { prisma } = require('@farmassist/database');
+    await prisma.user.update({
+      where: { id: uid },
+      data: { avatarUrl }
+    });
 
     res.status(200).json({
       success: true,

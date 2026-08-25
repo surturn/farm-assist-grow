@@ -231,7 +231,6 @@ export default function Settings() {
     setUploadingAvatar(true);
     const form = new FormData();
     form.append("avatar", file);
-    form.append("uid", user.uid);
 
     try {
       const { data } = await apiClient.post('/users/avatar', form, {
