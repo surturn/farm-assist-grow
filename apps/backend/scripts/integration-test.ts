@@ -47,7 +47,12 @@ const sharp = require('sharp');
 const app = require('../src/app').default;
 
 const AUTH = { Authorization: 'Bearer stub' };
-const UIDS = ['ITEST_user_provisioning', 'ITEST_user_race', 'ITEST_user_avatar'];
+const UIDS = [
+  'ITEST_user_provisioning',
+  'ITEST_user_race',
+  'ITEST_user_avatar',
+  'ITEST_user_outsider',
+];
 const SEED_TENANT = 'ITEST_agrovet_tenant';
 const AVATARS_DIR = path.join(__dirname, '../public/avatars');
 
@@ -184,6 +189,54 @@ async function run(base: string) {
 
   res = await fetch(`${base}/api/v1/users/avatar`, { method: 'POST', body: form });
   check('avatar upload rejects an unauthenticated caller', res.status === 401, `status=${res.status}`);
+
+  // --- A farm id in the request body must be checked against membership.
+  // The first test user owns a farm; a second, unrelated user must not be
+  // able to attach anything to it just by naming its id.
+  const ownerMemberships = await prisma.tenantUser.findMany({
+    where: { userId: 'ITEST_user_provisioning' },
+  });
+  const victimFarm = await prisma.farm.findFirst({
+    where: { tenantId: ownerMemberships[0].tenantId },
+  });
+
+  TOKEN_UID = 'ITEST_user_outsider';
+  await fetch(`${base}/api/v1/agrovets`, { headers: AUTH }); // provision the outsider
+
+  const asOutsider = { ...AUTH, 'Content-Type': 'application/json' };
+
+  res = await fetch(`${base}/api/v1/tasks`, {
+    method: 'POST',
+    headers: asOutsider,
+    body: JSON.stringify({ title: 'ITEST intrusion', farmId: victimFarm.id }),
+  });
+  check("outsider cannot create a task on someone else's farm", res.status === 403, `status=${res.status}`);
+
+  res = await fetch(`${base}/api/v1/farm-notes`, {
+    method: 'POST',
+    headers: asOutsider,
+    body: JSON.stringify({ note: 'ITEST intrusion', farmId: victimFarm.id }),
+  });
+  check("outsider cannot write a farm note on someone else's farm", res.status === 403, `status=${res.status}`);
+
+  res = await fetch(`${base}/api/v1/scans`, {
+    method: 'POST',
+    headers: asOutsider,
+    body: JSON.stringify({ diseaseName: 'ITEST intrusion', farmId: victimFarm.id }),
+  });
+  check("outsider cannot attach a scan to someone else's farm", res.status === 403, `status=${res.status}`);
+
+  const intruded = await prisma.task.count({ where: { farmId: victimFarm.id, assignedTo: 'ITEST_user_outsider' } });
+  check('no intruding row reached the database', intruded === 0, `count=${intruded}`);
+
+  // The owner must still be able to use their own farm.
+  TOKEN_UID = 'ITEST_user_provisioning';
+  res = await fetch(`${base}/api/v1/tasks`, {
+    method: 'POST',
+    headers: { ...AUTH, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'ITEST owner task', farmId: victimFarm.id }),
+  });
+  check('the farm owner can still create a task on it', res.status === 201, `status=${res.status}`);
 }
 
 const server = app.listen(0, async () => {

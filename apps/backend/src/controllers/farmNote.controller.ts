@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as farmNoteService from '../services/farmNote.service';
+import { userCanAccessFarm } from '../services/farmAccess.service';
 
 export const getFarmNotes = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -26,6 +27,12 @@ export const createFarmNote = async (req: Request, res: Response): Promise<any> 
         // REST endpoint still writes text against a named farm.
         if (!farmId || !note) {
             return res.status(400).json({ error: 'farmId and note are required' });
+        }
+
+        // farmId is caller-supplied and a farm id is not a secret, so it is
+        // checked against the caller's tenant memberships before writing.
+        if (!(await userCanAccessFarm(userId, farmId))) {
+            return res.status(403).json({ error: 'You do not have access to this farm' });
         }
 
         const newNote = await farmNoteService.createFarmNote({ userId }, { farmId, note });

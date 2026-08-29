@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@farmassist/database';
+import { userCanAccessFarm } from '../services/farmAccess.service';
 
 export const getTasks = async (req: Request, res: Response) => {
     try {
@@ -31,6 +32,15 @@ export const createTask = async (req: Request, res: Response) => {
 
         if (!title) {
             return res.status(400).json({ error: 'Title is required' });
+        }
+
+        // farmId comes from the request body, so it must be checked against the
+        // caller's memberships. Without this a user can attach a task to any
+        // farm id they can guess, including another tenant's. Today every read
+        // path filters by assignee so nothing leaks, but the farm-scoped views
+        // being designed would surface these rows on the wrong farm.
+        if (farmId && !(await userCanAccessFarm(userId, farmId))) {
+            return res.status(403).json({ error: 'You do not have access to this farm' });
         }
 
         const task = await prisma.task.create({
