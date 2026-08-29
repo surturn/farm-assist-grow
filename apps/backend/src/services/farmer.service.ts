@@ -67,8 +67,10 @@ export async function touchChannel(phone: string, language?: string) {
     },
     update: {
       lastInboundAt: new Date(),
-      // An inbound message is an implicit opt back in.
-      optedOut: false,
+      // optedOut is deliberately not cleared here. A farmer who sent SIMAMA
+      // and later asks an unrelated question has not withdrawn that decision,
+      // and silently resuming alerts is what gets a business number blocked.
+      // Opting back in requires the explicit command below.
     },
     include: { user: true },
   });
@@ -121,4 +123,9 @@ export async function setLanguage(channelId: string, language: string) {
 /** SIMAMA / STOP. Honoured before any send, so it must never fail silently. */
 export async function optOut(channelId: string) {
   return prisma.farmerChannel.update({ where: { id: channelId }, data: { optedOut: true } });
+}
+
+/** ANZA / START. The only thing that undoes optOut; see touchChannel. */
+export async function optIn(channelId: string) {
+  return prisma.farmerChannel.update({ where: { id: channelId }, data: { optedOut: false } });
 }
