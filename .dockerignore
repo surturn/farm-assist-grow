@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env.local
+**/.env.local
+node_modules
+**/node_modules
+dist
+**/dist
+npm-debug.log
+Thumbs.db
+
+# Training data / model artifacts - not used by any Dockerfile, ~20GB of build context
+AImodel
+Microsoft

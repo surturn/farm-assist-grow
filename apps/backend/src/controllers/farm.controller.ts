@@ -9,13 +9,15 @@ export const getFarms = async (req: Request, res: Response) => {
 
         const farms = await prisma.farm.findMany({
             where: {
-                members: {
-                    some: { userId }
+                tenant: {
+                    members: {
+                        some: { userId }
+                    }
                 }
             },
             include: {
                 _count: {
-                    select: { crops: true, members: true, tasks: true }
+                    select: { crops: true, tasks: true, scans: true, notes: true }
                 }
             }
         });
@@ -34,14 +36,21 @@ export const createFarm = async (req: Request, res: Response) => {
 
         const validatedData = createFarmSchema.parse(req.body);
 
+        // When a user creates a farm, they are creating a new Farm Tenant as well
         const farm = await prisma.farm.create({
             data: {
                 name: validatedData.name,
                 location: validatedData.location,
-                members: {
+                tenant: {
                     create: {
-                        userId,
-                        role: 'OWNER'
+                        name: `${validatedData.name} Tenant`,
+                        type: 'FARM',
+                        members: {
+                            create: {
+                                userId,
+                                role: 'OWNER'
+                            }
+                        }
                     }
                 }
             }

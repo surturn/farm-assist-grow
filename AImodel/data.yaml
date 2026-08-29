@@ -1,0 +1,36 @@
+names:
+  0: Cashew___Anthracnose
+  1: Cashew___Gummosis
+  2: Cashew___Healthy
+  3: Cashew___Leaf_Miner
+  4: Cashew___Red_Rust
+  5: Cassava___Bacterial_Blight
+  6: Cassava___Brown_Spot
+  7: Cassava___Green_Mite
+  8: Cassava___Healthy
+  9: Cassava___Mosaic
+  10: Maize___Common_Rust
+  11: Maize___Fall_Armyworm
+  12: Maize___Gray_Leaf_Spot
+  13: Maize___Healthy
+  14: Maize___Northern_Leaf_Blight
+  15: Maize___Streak_Virus
+  16: Pepper___Bacterial_Spot
+  17: Pepper___Healthy
+  18: Potato___Early_Blight
+  19: Potato___Healthy
+  20: Potato___Late_Blight
+  21: Tomato___Bacterial_Spot
+  22: Tomato___Early_Blight
+  23: Tomato___Healthy
+  24: Tomato___Late_Blight
+  25: Tomato___Leaf_Mold
+  26: Tomato___Mosaic_Virus
+  27: Tomato___Septoria_Leaf_Spot
+  28: Tomato___Target_Spot
+  29: Tomato___Yellow_Leaf_Curl_Virus
+nc: 30
+path: C:\Users\semutryr\Desktop\Projects\farm-assist-grow\AImodel\KenyaCropDisease
+test: test
+train: train
+val: val

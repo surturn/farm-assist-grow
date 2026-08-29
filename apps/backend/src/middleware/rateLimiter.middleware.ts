@@ -18,8 +18,8 @@ export const rateLimiter = (options: RateLimitOptions) => {
         }
 
         try {
-            // Use IP as identifier if auth is not yet processed, otherwise UID
-            const identifier = req.user?.uid || req.ip || 'unknown';
+            // Use IP as identifier if auth is not yet processed, otherwise user id
+            const identifier = req.user?.id || req.ip || 'unknown';
             const key = `rate-limit:${req.originalUrl}:${identifier}`;
 
             const requests = await redis.incr(key);

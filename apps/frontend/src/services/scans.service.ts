@@ -1,8 +1,8 @@
 import { apiClient } from '../api/client';
 
 export const scansService = {
-  getScans: async () => {
-    const { data } = await apiClient.get('/scans');
+  getScans: async (farmId?: string | null) => {
+    const { data } = await apiClient.get('/scans', { params: { farmId } });
     return data;
   },
   
