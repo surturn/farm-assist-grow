@@ -21,8 +21,11 @@ interface Agrovet {
   id: string;
   name: string;
   location: string;
-  contactNumber: string;
-  rating: number;
+  // Both are nullable in the schema. contactNumber is absent until the agrovet
+  // supplies one; rating stays null until a review mechanism exists, and must
+  // never be shown as a default value.
+  contactNumber: string | null;
+  rating: number | null;
   products?: Product[];
 }
 
@@ -30,7 +33,6 @@ export default function AgrovetMarketplace() {
   const [agrovets, setAgrovets] = useState<Agrovet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [ordering, setOrdering] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAgrovets();
@@ -50,15 +52,19 @@ export default function AgrovetMarketplace() {
     }
   };
 
-  const handleOrder = (productId: string, productName: string, agrovetName: string) => {
-    setOrdering(productId);
-    // Simulate order placement
-    setTimeout(() => {
-      setOrdering(null);
-      toast.success(`Ordered ${productName}`, {
-        description: `Your order from ${agrovetName} has been placed. They will contact you shortly.`
-      });
-    }, 1500);
+  // There is no order pipeline yet, so this opens WhatsApp with the enquiry
+  // pre-written rather than claiming an order was placed. Ordering is a
+  // separate design decision; a fake confirmation would be worse than none.
+  const handleEnquire = (product: Product, agrovet: Agrovet) => {
+    if (!agrovet.contactNumber) {
+      toast.error(`${agrovet.name} has not listed a contact number yet`);
+      return;
+    }
+    const text = encodeURIComponent(
+      `Habari ${agrovet.name}, ninauliza kuhusu ${product.name} (KES ${product.price}).`
+    );
+    const phone = agrovet.contactNumber.replace(/[^\d]/g, "");
+    window.open(`https://wa.me/${phone}?text=${text}`, "_blank", "noopener,noreferrer");
   };
 
   const filteredAgrovets = agrovets.filter(a => 
@@ -106,17 +112,30 @@ export default function AgrovetMarketplace() {
                     <div>
                       <CardTitle className="text-xl text-orange-950 flex items-center gap-2">
                         {agrovet.name}
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-200">
-                          <Star className="h-3 w-3 mr-1 fill-orange-500 text-orange-500" /> {agrovet.rating}
-                        </Badge>
+                        {agrovet.rating !== null && (
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-200">
+                            <Star className="h-3 w-3 mr-1 fill-orange-500 text-orange-500" /> {agrovet.rating}
+                          </Badge>
+                        )}
                       </CardTitle>
                       <CardDescription className="flex items-center gap-4 mt-1">
                         <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {agrovet.location}</span>
-                        <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {agrovet.contactNumber}</span>
+                        {agrovet.contactNumber && (
+                          <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {agrovet.contactNumber}</span>
+                        )}
                       </CardDescription>
                     </div>
-                    <Button variant="outline" className="border-orange-200 text-orange-700 hover:bg-orange-50">
-                      Contact Agrovet
+                    <Button
+                      variant="outline"
+                      className="border-orange-200 text-orange-700 hover:bg-orange-50"
+                      disabled={!agrovet.contactNumber}
+                      onClick={() => agrovet.contactNumber && window.open(
+                        `https://wa.me/${agrovet.contactNumber.replace(/[^\d]/g, "")}`,
+                        "_blank",
+                        "noopener,noreferrer"
+                      )}
+                    >
+                      {agrovet.contactNumber ? "Contact Agrovet" : "No contact listed"}
                     </Button>
                   </div>
                 </CardHeader>
@@ -136,16 +155,12 @@ export default function AgrovetMarketplace() {
                           <h4 className="font-semibold text-lg leading-tight mb-1">{product.name}</h4>
                           <p className="text-2xl font-bold text-orange-700 mb-4">KES {product.price}</p>
                         </div>
-                        <Button 
-                          className="w-full bg-orange-600 hover:bg-orange-700" 
-                          disabled={!product.inStock || ordering === product.id}
-                          onClick={() => handleOrder(product.id, product.name, agrovet.name)}
+                        <Button
+                          className="w-full bg-orange-600 hover:bg-orange-700"
+                          disabled={!product.inStock || !agrovet.contactNumber}
+                          onClick={() => handleEnquire(product, agrovet)}
                         >
-                          {ordering === product.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <><ShoppingBag className="h-4 w-4 mr-2" /> Order Now</>
-                          )}
+                          <ShoppingBag className="h-4 w-4 mr-2" /> Enquire on WhatsApp
                         </Button>
                       </div>
                     ))}

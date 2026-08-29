@@ -118,6 +118,7 @@ async function run(base: string) {
         create: {
           name: 'ITEST Agrovet',
           location: 'Nakuru',
+          contactNumber: '+254711000111',
           products: {
             create: [
               { name: 'ITEST NPK 17-17-17', price: 3500, category: 'FERTILIZER' },
@@ -136,6 +137,9 @@ async function run(base: string) {
   check('GET /agrovets returns 200', res.status === 200, `status=${res.status}`);
   check('GET /agrovets includes the seeded agrovet', !!seeded);
   check('GET /agrovets includes its products', seeded?.products?.length === 2, `count=${seeded?.products?.length}`);
+  // The dashboard renders these two; before they existed it showed "undefined".
+  check('agrovet exposes contactNumber', seeded?.contactNumber === '+254711000111', `got=${seeded?.contactNumber}`);
+  check('agrovet rating is null rather than a made-up default', seeded?.rating === null, `got=${seeded?.rating}`);
 
   res = await fetch(`${base}/api/v1/agrovets/products/search?query=npk`, { headers: AUTH });
   const found = await res.json();
