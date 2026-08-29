@@ -13,7 +13,15 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 app.use(cors({ origin: true, credentials: true })); // Configure strictly for production
-app.use(express.json({ limit: '10mb' })); // Max payload size
+// The raw bytes are kept because Meta's webhook signature is an HMAC over the
+// body exactly as sent. Re-serialising the parsed object produces different
+// bytes for the same document, so the verification would never match.
+app.use(express.json({
+    limit: '10mb', // Max payload size
+    verify: (req, _res, buf) => {
+        (req as any).rawBody = buf;
+    },
+}));
 app.use(express.urlencoded({ extended: true }));
 
 /**
@@ -38,6 +46,7 @@ import userRoutes from './routes/user.routes';
 import taskRoutes from './routes/task.routes';
 import farmnoteRoutes from './routes/farmnote.routes';
 import agrovetRoutes from './routes/agrovet.routes';
+import whatsappWebhookRoutes from './channels/whatsapp/webhook.route';
 import path from 'path';
 
 app.use('/api/v1/public', express.static(path.join(__dirname, '../public')));
@@ -54,6 +63,10 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/tasks', taskRoutes);
 app.use('/api/v1/farm-notes', farmnoteRoutes);
 app.use('/api/v1/agrovets', agrovetRoutes);
+
+// Unauthenticated by design: the caller is Meta, not a logged-in user. The
+// HMAC signature check inside the route is what authenticates it.
+app.use('/api/v1/channels/whatsapp/webhook', whatsappWebhookRoutes);
 /**
  * Global Error Handler Middleware
  */
