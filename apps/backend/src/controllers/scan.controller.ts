@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as scanService from '../services/scan.service';
+import { userCanAccessFarm } from '../services/farmAccess.service';
 
 export const getScans = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -27,6 +28,12 @@ export const createScan = async (req: Request, res: Response): Promise<any> => {
         }
 
         const { farmId, imageUrl, diseaseName, confidence, treatment } = req.body;
+
+        // Same reasoning as tasks and farm notes: a body-supplied farmId must
+        // be checked against the caller's memberships, not trusted.
+        if (farmId && !(await userCanAccessFarm(userId, farmId))) {
+            return res.status(403).json({ error: 'You do not have access to this farm' });
+        }
 
         const newScan = await scanService.createScan(
             { userId },
