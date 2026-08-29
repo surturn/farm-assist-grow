@@ -22,6 +22,7 @@ model User {
   notifications     Notification[]
   scans             Scan[]
   farmNotes         FarmNote[]
+  channel           FarmerChannel?
 }
 
 enum TenantType {
@@ -114,33 +115,70 @@ model Notification {
 
 model Scan {
   id            String   @id @default(uuid())
-  userId        String
+  // Nullable: a scan can arrive from an unlinked WhatsApp number and is held
+  // against the FarmerChannel until that farmer registers.
+  userId        String?
   farmId        String?
   imageUrl      String?
   diseaseName   String?
   confidence    Float?
   treatment     String?
   createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  farm          Farm?    @relation(fields: [farmId], references: [id], onDelete: SetNull)
+
+  // WhatsApp provenance. waMessageId is unique so a replayed Meta webhook
+  // is a no-op: one field serves both provenance and idempotency.
+  channelId     String?
+  waMessageId   String?  @unique
+  mediaId       String?
+  workerVersion String?
+  reviewStatus  String?  // null for API scans; PENDING/CLEARED/ESCALATED from the channel
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farm          Farm?          @relation(fields: [farmId], references: [id], onDelete: SetNull)
+  channel       FarmerChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  @@index([channelId, createdAt])
 }
 
 model FarmNote {
   id          String   @id @default(uuid())
-  farmId      String
+  // Nullable: a farmer with more than one farm is asked once per session, so a
+  // note can land before the farm is resolved.
+  farmId      String?
   userId      String
-  note        String
+  // Nullable: a voice note is the log entry itself, so `note` is empty when
+  // audioUrl is set. No transcription is performed.
+  note        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  channelId     String?
+  waMessageId   String?  @unique
+  audioUrl      String?
+  workerVersion String?
+
+  farm        Farm?          @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel     FarmerChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  @@index([channelId, createdAt])
 }
 
 model Agrovet {
   id          String   @id @default(uuid())
   tenantId    String   @unique
-  name        String
-  location    String
+  name          String
+  location      String
+  // E.164. The dashboard offers a "Contact Agrovet" action, and a
+  // low-confidence diagnosis routes the farmer to a real person here.
+  contactNumber String?
+  // Null until a review mechanism exists. Callers must treat null as "no
+  // rating" and show nothing — never substitute a default.
+  rating        Float?
+  // Unused in v1. Ships now so the v1.1 geospatial agrovet matching needs no
+  // migration; v1 routes low-confidence scans by county-level region instead.
+  latitude      Float?
+  longitude     Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -156,6 +194,69 @@ model Product {
   category    String   // SEED, FERTILIZER, PESTICIDE
   inStock     Boolean  @default(true)
   agrovet     Agrovet  @relation(fields: [agrovetId], references: [id], onDelete: Cascade)
+}
+
+/// A WhatsApp correspondent, keyed on their phone number rather than on an
+/// account. The row exists from the farmer's very first message, before any
+/// User does, which is what lets the first scan be answered without a signup.
+model FarmerChannel {
+  id       String  @id @default(uuid())
+  phone    String  @unique // E.164, no spaces or punctuation
+  userId   String? @unique // null until the farmer completes signup
+  language String  @default("sw")
+
+  // Four digits, hashed. Deliberately separate from the account password:
+  // household phones are shared, and a PIN in chat history must not reach
+  // the dashboard account.
+  pinHash String?
+
+  // One-time link carried into the website signup flow.
+  linkToken          String?   @unique
+  linkTokenExpiresAt DateTime?
+
+  optedOut Boolean @default(false)
+
+  // Load-bearing: the sender reads this to enforce Meta's 24-hour rule, so a
+  // free-form send outside the window fails in code rather than at Meta.
+  lastInboundAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  events    ChannelEvent[]
+  scans     Scan[]
+  farmNotes FarmNote[]
+}
+
+enum ChannelDirection {
+  INBOUND
+  OUTBOUND
+}
+
+/// Append-only log of everything that crossed the channel. Never updated,
+/// never deleted while its channel lives. This is the evidence base for
+/// debugging delivery failures and for defending the Meta quality rating.
+model ChannelEvent {
+  id          String           @id @default(uuid())
+  channelId   String
+  direction   ChannelDirection
+  /// Dotted event name: message.image, message.text, message.audio,
+  /// command.stop, status.delivered, status.failed.
+  type        String
+  waMessageId String?
+  /// Pointer to where the body lives (storage key, Scan id, FarmNote id).
+  /// The payload itself is not copied in here.
+  payloadRef  String?
+  /// Small structured extras only — template name, error code, category.
+  /// Never message content, never credentials.
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+
+  channel FarmerChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, createdAt])
+  @@index([waMessageId])
 }
 
 model NewsItem {

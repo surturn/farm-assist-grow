@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '@farmassist/database';
+import * as notificationService from '../services/notification.service';
 
 export const getNotifications = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -8,11 +8,7 @@ export const getNotifications = async (req: Request, res: Response): Promise<any
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const notifications = await prisma.notification.findMany({
-            where: { userId },
-            orderBy: { createdAt: 'desc' }
-        });
-
+        const notifications = await notificationService.listNotificationsForUser(userId);
         return res.status(200).json(notifications);
     } catch (error: any) {
         console.error('Get Notifications Error:', error);
@@ -27,15 +23,8 @@ export const markAsRead = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const { id } = req.params;
-        
-        // Ensure the notification belongs to this user
-        const updated = await prisma.notification.updateMany({
-            where: { id, userId },
-            data: { read: true }
-        });
-
-        if (updated.count === 0) {
+        const marked = await notificationService.markNotificationRead(userId, req.params.id);
+        if (!marked) {
             return res.status(404).json({ error: 'Notification not found' });
         }
 
@@ -53,12 +42,8 @@ export const markAllAsRead = async (req: Request, res: Response): Promise<any> =
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const updated = await prisma.notification.updateMany({
-            where: { userId, read: false },
-            data: { read: true }
-        });
-
-        return res.status(200).json({ success: true, count: updated.count });
+        const count = await notificationService.markAllNotificationsRead(userId);
+        return res.status(200).json({ success: true, count });
     } catch (error: any) {
         console.error('Mark All Notifications Read Error:', error);
         return res.status(500).json({ error: 'Failed to mark all as read', details: error.message });

@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '@farmassist/database';
-// In a real app we'd import the aiService here, but keeping it simple for the controller
+import * as scanService from '../services/scan.service';
 
 export const getScans = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -9,18 +8,10 @@ export const getScans = async (req: Request, res: Response): Promise<any> => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const limitQuery = req.query.limit ? parseInt(req.query.limit as string) : 50;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
         const farmId = req.query.farmId as string | undefined;
 
-        const scans = await prisma.scan.findMany({
-            where: { 
-                userId,
-                ...(farmId ? { farmId } : {})
-            },
-            orderBy: { createdAt: 'desc' },
-            take: limitQuery
-        });
-
+        const scans = await scanService.listScansForUser(userId, { limit, farmId });
         return res.status(200).json(scans);
     } catch (error: any) {
         console.error('Get Scans Error:', error);
@@ -36,17 +27,11 @@ export const createScan = async (req: Request, res: Response): Promise<any> => {
         }
 
         const { farmId, imageUrl, diseaseName, confidence, treatment } = req.body;
-        
-        const newScan = await prisma.scan.create({
-            data: {
-                userId,
-                farmId: farmId || null,
-                imageUrl,
-                diseaseName,
-                confidence,
-                treatment
-            }
-        });
+
+        const newScan = await scanService.createScan(
+            { userId },
+            { farmId, imageUrl, diseaseName, confidence, treatment }
+        );
 
         return res.status(201).json(newScan);
     } catch (error: any) {
