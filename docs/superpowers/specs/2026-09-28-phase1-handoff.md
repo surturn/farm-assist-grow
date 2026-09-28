@@ -1,6 +1,6 @@
 # Handoff — Phase 1 data pipeline (2026-09-28)
 
-**Worktree:** `.claude/worktrees/phase1-data-pipeline`, branch `worktree-phase1-data-pipeline`. **Uncommitted.**
+**Worktree:** `.claude/worktrees/phase1-data-pipeline`, branch `worktree-phase1-data-pipeline`. Committed (`a4aeb80` onward), not merged.
 **Design:** `2026-09-28-phase1-v1-class-scope-and-data-pipeline.md` (read first).
 **Data:** datasets live in the main checkout; run with `FARM_DATA_ROOT=C:/Users/semutryr/Desktop/Projects/farm-assist-grow/AImodel`.
 
@@ -27,10 +27,10 @@
 ## Interrupted
 - The final rebuild + verify was killed by the OS for low memory. It was not a code failure.
 - `splits/v1/summary.json` and `splits/v1/verify.json` predate the `resolve_cross_label` rule. Only 1 pair is affected (a false positive, and it did not cross splits).
-- Planned but unapplied: lower `near_duplicate_pairs(chunk=16)` to `8` in `pipeline/imagehash.py`, which roughly halves peak memory. The rebuild takes about 20 minutes.
+- `near_duplicate_pairs` chunk lowered from 16 to 8 (about half the peak memory). The rebuild takes about 20 minutes.
 
 ## Next
-1. Apply the chunk=8 change, then rebuild and verify when memory allows.
+1. Rebuild and verify when memory allows.
 2. Download the datasets into `AImodel/external/` (table in design §7).
 3. Re-run `build_split.py` then `verify_split.py`. Train only when `TRAIN_READY=True`.
 4. Commit only after the user approves. No AI attribution in commits.

@@ -74,7 +74,8 @@ def _pack(values: list[int]) -> np.ndarray:
 
 
 def near_duplicate_pairs(canonical: list[int], variants: list[list[int]], max_distance: int,
-                         chunk: int = 16) -> set[tuple[int, int]]:
+                         chunk: int = 8) -> set[tuple[int, int]]:
+    # Peak memory per chunk ~ chunk x 8 x n x 4 x 8 bytes (~87 MB at n=42.5k, chunk=8).
     """Pairs (i, j), i < j, where some orientation of j is within max_distance of i. Exact."""
     n = len(canonical)
     if n < 2:
