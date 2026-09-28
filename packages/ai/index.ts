@@ -1,6 +1,9 @@
 import { redis } from '@farmassist/redis';
 import crypto from 'crypto';
 
+export { assertKnowledgeMatchesManifest, loadClassManifest, loadKnowledge } from './manifest';
+export { decide } from './abstention';
+
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB limit
 
 export const analyzeCropImage = async (imageBase64: string, farmId?: string) => {

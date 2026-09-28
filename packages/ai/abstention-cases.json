@@ -1,0 +1,31 @@
+{
+  "notes": "Shared by AImodel/tests (Python) and apps/backend/scripts/ai-manifest-test.ts (TypeScript). Both implementations of the abstention policy must produce these exact decisions with the thresholds in class-manifest.json.",
+  "cases": [
+    { "name": "confident disease answered",
+      "probs": { "Tomato___Septoria_Leaf_Spot": 0.95, "Tomato___Early_Blight": 0.03, "Tomato___Healthy": 0.02 },
+      "declaredCrop": null, "answer": "Tomato___Septoria_Leaf_Spot", "reason": "answered" },
+    { "name": "septoria vs early blight split is not sure",
+      "probs": { "Tomato___Septoria_Leaf_Spot": 0.6, "Tomato___Early_Blight": 0.35, "Tomato___Healthy": 0.05 },
+      "declaredCrop": null, "answer": null, "reason": "low_confidence" },
+    { "name": "disease with real healthy probability is not forced",
+      "probs": { "Tomato___Late_Blight": 0.85, "Tomato___Healthy": 0.15 },
+      "declaredCrop": null, "answer": null, "reason": "healthy_ambiguous" },
+    { "name": "confident healthy answered",
+      "probs": { "Coffee___Healthy": 0.97, "Coffee___Rust": 0.03 },
+      "declaredCrop": "Coffee", "answer": "Coffee___Healthy", "reason": "answered" },
+    { "name": "probability spread across crops means unknown crop",
+      "probs": { "Tomato___Healthy": 0.5, "Mango___Healthy": 0.5 },
+      "declaredCrop": null, "answer": null, "reason": "unknown_crop" },
+    { "name": "avocado is in scope but untrained",
+      "probs": { "Mango___Anthracnose": 0.99, "Mango___Healthy": 0.01 },
+      "declaredCrop": "Avocado", "answer": null, "reason": "crop_not_supported" },
+    { "name": "maize is out of scope entirely",
+      "probs": { "Bean___Rust": 0.99, "Bean___Healthy": 0.01 },
+      "declaredCrop": "Maize", "answer": null, "reason": "unknown_crop" },
+    { "name": "model crop disagrees with the farmer's crop",
+      "probs": { "Coffee___Rust": 0.97, "Coffee___Healthy": 0.03 },
+      "declaredCrop": "Tomato", "answer": null, "reason": "crop_mismatch" },
+    { "name": "no probabilities",
+      "probs": {}, "declaredCrop": null, "answer": null, "reason": "no_prediction" }
+  ]
+}

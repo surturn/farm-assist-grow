@@ -47,10 +47,20 @@ serviceAccountKey.json
 /AImodel/Dataset for Crop Pest and Disease Detection/
 /AImodel/KenyaCropDisease/
 /AImodel/KenyaCropDisease_v2/
+/AImodel/KenyaCropDisease_v2_field/
+/AImodel/external/
 /AImodel/PlantDoc1/
 /AImodel/PlantDoc2/
 /AImodel/runs/
 /AImodel/*.pt
+**/__pycache__/
+
+# Split outputs: the per-image manifest and hash cache are large and rebuildable
+# (build_split.py is deterministic). summary.json and verify.json are tracked
+# as the reviewable evidence.
+/AImodel/splits/*/split_manifest.csv
+/AImodel/splits/*/hash-cache.json
+/AImodel/splits/*/augment_manifest.csv
 
 # Generated directory dumps
 /AImodel/structure.txt

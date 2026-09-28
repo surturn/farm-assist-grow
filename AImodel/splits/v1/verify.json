@@ -1,0 +1,42 @@
+{
+  "train_ready": false,
+  "eval_ready": false,
+  "checks": {
+    "G1 manifest": {
+      "pass": true,
+      "detail": "v1-2026-09-28: 33 classes, 7 crops, each with Healthy"
+    },
+    "G2 knowledge sync": {
+      "pass": true,
+      "detail": "exact match, no dosages, no severity"
+    },
+    "G3 no maize/cassava": {
+      "pass": true,
+      "detail": "0 contaminated rows"
+    },
+    "G4 labels in manifest": {
+      "pass": true,
+      "detail": "42516 rows ok"
+    },
+    "G5 group in one split": {
+      "pass": true,
+      "detail": "27293 groups; 0 span splits"
+    },
+    "G6 no identical file across splits": {
+      "pass": true,
+      "detail": "0 sha256 in >1 split"
+    },
+    "G7 no near-duplicate across splits": {
+      "pass": true,
+      "detail": "24230 near-dup pairs, 0 cross-split"
+    },
+    "G8 class coverage": {
+      "pass": false,
+      "detail": "14 classes short: Coffee___Cercospora_Leaf_Spot (train 0, val 0, test 0 groups); Coffee___Healthy (train 0, val 0, test 0 groups); Coffee___Leaf_Miner (train 0, val 0, test 0 groups); Coffee___Phoma (train 0, val 0, test 0 groups); Coffee___Rust (train 0, val 0, test 0 groups); Pepper___Anthracnose (train 0, val 0, test 0 groups); Pepper___Mosaic_Virus (train 0, val 0, test 0 groups); Bean___Angular_Leaf_Spot (train 0, val 0, test 0 groups); Bean___Anthracnose (train 0, val 0, test 0 groups); Bean___Healthy (train 0, val 0, test 0 groups); Bean___Rust (train 0, val 0, test 0 groups); Mango___Anthracnose (train 0, val 0, test 0 groups); Mango___Healthy (train 0, val 0, test 0 groups); Mango___Powdery_Mildew (train 0, val 0, test 0 groups)"
+    },
+    "G9 field eval sets": {
+      "pass": false,
+      "detail": "no field test images for: ['Coffee', 'Tomato', 'Pepper', 'Potato']"
+    }
+  }
+}
