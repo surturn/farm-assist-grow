@@ -719,9 +719,9 @@
     },
     "Tomato___Late_Blight": {
       "train": {
-        "images": 1861,
+        "images": 1860,
         "groups": 1509,
-        "scored_images": 1528
+        "scored_images": 1527
       },
       "val": {
         "images": 227,
@@ -732,6 +732,11 @@
         "images": 226,
         "groups": 188,
         "scored_images": 190
+      },
+      "excluded": {
+        "images": 1,
+        "groups": 1,
+        "scored_images": 1
       },
       "origins": [
         "PlantVillage (augmented)"
@@ -987,9 +992,9 @@
     },
     "Cashew___Gummosis": {
       "train": {
-        "images": 314,
-        "groups": 312,
-        "scored_images": 314
+        "images": 313,
+        "groups": 311,
+        "scored_images": 313
       },
       "val": {
         "images": 39,
@@ -1000,6 +1005,11 @@
         "images": 39,
         "groups": 39,
         "scored_images": 39
+      },
+      "excluded": {
+        "images": 1,
+        "groups": 1,
+        "scored_images": 1
       },
       "origins": [
         "CCMT raw (Ghana)"

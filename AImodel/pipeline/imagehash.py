@@ -73,13 +73,53 @@ def _pack(values: list[int]) -> np.ndarray:
     return out
 
 
+def _cuda():
+    try:
+        import torch
+        return torch if torch.cuda.is_available() else None
+    except ImportError:
+        return None
+
+
+def _signs(values: list[int]) -> np.ndarray:
+    """256-bit ints -> (n, 256) array of +1/-1 (bit set -> -1)."""
+    packed = _pack(values).view(np.uint8)                        # little-endian bytes
+    bits = np.unpackbits(packed, axis=1, bitorder="little")      # (n, 256)
+    return 1 - 2 * bits.astype(np.int8)
+
+
+def _pairs_gpu(torch, canonical, variants, max_distance, rows: int = 4096) -> set[tuple[int, int]]:
+    """Hamming = (256 - dot(+-1, +-1)) / 2. Dot products are integers in [-256, 256],
+    exact in fp16, so this equals the CPU popcount result bit for bit."""
+    n = len(canonical)
+    dev = torch.device("cuda")
+    C = torch.from_numpy(_signs(canonical)).to(dev, torch.float16)                       # (n, 256)
+    V = torch.from_numpy(_signs([h for vs in variants for h in vs])).to(dev, torch.float16)  # (8n, 256)
+    min_dot = HASH_BITS - 2 * max_distance
+    pairs: set[tuple[int, int]] = set()
+    for start in range(0, 8 * n, rows):
+        dots = V[start:start + rows] @ C.T                                               # (r, n)
+        vi, ci = torch.nonzero(dots >= min_dot, as_tuple=True)
+        for v, i in zip(vi.tolist(), ci.tolist()):
+            j = (start + v) // 8
+            if i != j:
+                pairs.add((min(i, j), max(i, j)))
+    return pairs
+
+
 def near_duplicate_pairs(canonical: list[int], variants: list[list[int]], max_distance: int,
-                         chunk: int = 8) -> set[tuple[int, int]]:
-    # Peak memory per chunk ~ chunk x 8 x n x 4 x 8 bytes (~87 MB at n=42.5k, chunk=8).
-    """Pairs (i, j), i < j, where some orientation of j is within max_distance of i. Exact."""
+                         chunk: int = 8, device: str = "auto") -> set[tuple[int, int]]:
+    """Pairs (i, j), i < j, where some orientation of j is within max_distance of i. Exact.
+
+    device: "auto" uses CUDA when available, "cpu" forces numpy popcount.
+    CPU peak memory per chunk ~ chunk x 8 x n x 4 x 8 bytes (~87 MB at n=42.5k).
+    """
     n = len(canonical)
     if n < 2:
         return set()
+    torch = _cuda() if device == "auto" else None
+    if torch is not None:
+        return _pairs_gpu(torch, canonical, variants, max_distance)
     C = _pack(canonical)                                               # (n, W)
     V = _pack([h for vs in variants for h in vs]).reshape(n, 8, WORDS)  # (n, 8, W)
     pairs: set[tuple[int, int]] = set()

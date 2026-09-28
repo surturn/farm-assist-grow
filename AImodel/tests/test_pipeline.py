@@ -153,6 +153,21 @@ class HashTests(unittest.TestCase):
         self.assertEqual(got, brute)
         self.assertEqual(len(got), 30)
 
+    def test_gpu_path_equals_cpu_path(self):
+        from pipeline.imagehash import _cuda
+        if _cuda() is None:
+            self.skipTest("no CUDA")
+        rng = random.Random(1)
+        D = DEFAULT_MAX_DISTANCE
+        canon = [rng.getrandbits(256) for _ in range(150)]
+        bits = lambda k: sum(1 << b for b in rng.sample(range(256), k))  # noqa: E731
+        canon += [c ^ bits(D) for c in canon[:40]] + [c ^ bits(D + 1) for c in canon[40:80]]
+        variants = [[c ^ bits(rng.randrange(0, 60)) for _ in range(7)] + [c] for c in canon]
+        cpu = near_duplicate_pairs(canon, variants, D, device="cpu")
+        gpu = near_duplicate_pairs(canon, variants, D, device="auto")
+        self.assertEqual(gpu, cpu)
+        self.assertGreaterEqual(len(cpu), 40)
+
     def test_matches_through_any_orientation(self):
         canon = [1 << 200, 7]
         variants = [[1 << 200] * 8, [7, 7, 7, 1 << 200, 7, 7, 7, 7]]  # 2nd image rotated == 1st

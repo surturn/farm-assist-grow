@@ -20,7 +20,7 @@
     },
     "G5 group in one split": {
       "pass": true,
-      "detail": "27293 groups; 0 span splits"
+      "detail": "27292 groups; 0 span splits"
     },
     "G6 no identical file across splits": {
       "pass": true,
@@ -28,7 +28,7 @@
     },
     "G7 no near-duplicate across splits": {
       "pass": true,
-      "detail": "24230 near-dup pairs, 0 cross-split"
+      "detail": "24223 near-dup pairs, 0 cross-split"
     },
     "G8 class coverage": {
       "pass": false,

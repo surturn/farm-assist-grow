@@ -15,7 +15,8 @@ MUTATIONS = [
     ("pipeline/split.py", "if records[a].label == records[b].label:", "if False:", "near-duplicate grouping"),
     ("pipeline/split.py", 'if a.role == "pool" and b.role == "pool":', "if False:", "cross-label pool exclusion"),
     ("pipeline/imagehash.py", "d <= max_distance", "d < max_distance", "near-duplicate threshold boundary"),
-    ("pipeline/imagehash.py", ".min(axis=1)", "[:, 0, :]", "orientation-invariant matching"),
+    ("pipeline/imagehash.py", ".min(axis=1)", "[:, 0, :]", "orientation-invariant matching (CPU)"),
+    ("pipeline/imagehash.py", "dots >= min_dot", "dots > min_dot", "near-duplicate threshold boundary (GPU)"),
     ("pipeline/manifest.py", "        if m:\n", "        if False:\n", "dosage lint"),
     ("pipeline/manifest.py", 'if f"{crop}___Healthy" not in classes:', "if False:", "Healthy-per-crop rule"),
 ]
