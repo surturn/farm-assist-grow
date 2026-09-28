@@ -20,9 +20,12 @@ pipeline step and the backend read classes from it; nothing else may hard-code a
 | Pepper | Anthracnose, Bacterial Spot, Mosaic Virus, Healthy | 4 |
 | Bean (French beans) | Angular Leaf Spot, Anthracnose, Rust, Healthy | 4 |
 | Potato | Early Blight, Late Blight, Healthy | 3 |
-| Mango | Anthracnose, Powdery Mildew, Healthy | 3 |
 | Cashew | Anthracnose, Gummosis, Leaf Miner, Red Rust, Healthy | 5 |
-| **Total** | | **33** |
+| **Total** | | **30** |
+
+Manifest `v1.1-2026-09-28`. v1 had 33 classes including Mango ×3. Mango was deferred the
+same day because the only usable source, MangoLeafBD, is CC BY-NC 3.0 and cannot train a
+commercial model.
 
 Rules, enforced by `validate_manifest` (Python) and `checkManifestAndKnowledge` (TypeScript):
 
@@ -34,8 +37,9 @@ Rules, enforced by `validate_manifest` (Python) and `checkManifestAndKnowledge` 
 
 ### In scope but not trained
 
-Avocado (all diseases) and Mango Cercospora have no usable public data. They are listed under
-`notTrained` and are always answered "not sure". Training them needs purpose-collected Kenyan
+Avocado and Mango (all diseases) have no usable public data: none exists for avocado, and
+mango's is non-commercial. They are listed under `notTrained` and are always answered "not
+sure". Training them needs purpose-collected Kenyan
 field photos.
 
 ## 2. Abstention ("not sure" / *sipati uhakika*)

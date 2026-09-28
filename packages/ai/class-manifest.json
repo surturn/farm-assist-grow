@@ -1,10 +1,10 @@
 {
-  "version": "v1-2026-09-28",
+  "version": "v1.1-2026-09-28",
   "frozen": true,
   "notes": "Single source of truth for the crop-disease classifier. Read by AImodel/pipeline (split, verify, eval) and packages/ai (boot check, abstention). Changing this file changes the model contract: retrain, re-sync crop-knowledge.json, bump version.",
   "excludedCrops": ["Maize", "Corn", "Cassava"],
   "excludedTokens": ["maize", "corn", "cassava"],
-  "trainedCrops": ["Coffee", "Tomato", "Pepper", "Bean", "Potato", "Mango", "Cashew"],
+  "trainedCrops": ["Coffee", "Tomato", "Pepper", "Bean", "Potato", "Cashew"],
   "classes": [
     "Coffee___Cercospora_Leaf_Spot",
     "Coffee___Healthy",
@@ -31,9 +31,6 @@
     "Potato___Early_Blight",
     "Potato___Healthy",
     "Potato___Late_Blight",
-    "Mango___Anthracnose",
-    "Mango___Healthy",
-    "Mango___Powdery_Mildew",
     "Cashew___Anthracnose",
     "Cashew___Gummosis",
     "Cashew___Healthy",
@@ -41,9 +38,10 @@
     "Cashew___Red_Rust"
   ],
   "notTrained": {
-    "notes": "In product scope but no usable training data. Always answered 'not sure'. The model has no class for these, so a photo of them can only be caught by the abstention rules; the eval OOD probe sets measure how often that works.",
-    "crops": ["Avocado"],
-    "labels": ["Mango___Cercospora", "Avocado___Anthracnose", "Avocado___Powdery_Mildew", "Avocado___Cercospora"]
+    "notes": "In product scope but no usable training data. Always answered 'not sure'. The model has no class for these, so a photo of them can only be caught by the abstention rules; the eval OOD probe sets measure how often that works. Mango deferred 2026-09-28: the only usable source (MangoLeafBD) is CC BY-NC 3.0, not usable in a commercial product.",
+    "crops": ["Avocado", "Mango"],
+    "labels": ["Mango___Anthracnose", "Mango___Powdery_Mildew", "Mango___Cercospora",
+               "Avocado___Anthracnose", "Avocado___Powdery_Mildew", "Avocado___Cercospora"]
   },
   "abstention": {
     "calibrated": false,

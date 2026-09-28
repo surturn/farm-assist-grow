@@ -404,53 +404,6 @@
     ],
     "reviewed": false
   },
-  "Mango___Anthracnose": {
-    "diseaseName": "Mango anthracnose (Colletotrichum gloeosporioides)",
-    "cropType": "Mango",
-    "symptoms": [
-      "Dark brown to black irregular spots on leaves, often along the edges",
-      "Flowers turn black and drop",
-      "Black sunken spots on ripening fruit"
-    ],
-    "possibleCauses": ["fungal infection", "wet weather during flowering"],
-    "treatment": "Prune and destroy infected twigs and leaves. Fungicides at flowering and fruit set protect the crop. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
-    "prevention": [
-      "Prune for an open canopy",
-      "Clear fallen leaves and fruit",
-      "Protect flowers during wet seasons"
-    ],
-    "reviewed": false
-  },
-  "Mango___Healthy": {
-    "diseaseName": "Healthy",
-    "cropType": "Mango",
-    "symptoms": ["No visible signs of disease or pest damage"],
-    "possibleCauses": [],
-    "treatment": "No treatment needed. Keep monitoring, especially at flowering.",
-    "prevention": [
-      "Check new flushes and flowers",
-      "Prune for air flow",
-      "Clear fallen fruit"
-    ],
-    "reviewed": false
-  },
-  "Mango___Powdery_Mildew": {
-    "diseaseName": "Powdery mildew (Oidium mangiferae)",
-    "cropType": "Mango",
-    "symptoms": [
-      "White powdery coating on young leaves, flowers and small fruit",
-      "Young leaves curl and turn brown",
-      "Flowers and young fruit drop"
-    ],
-    "possibleCauses": ["fungal infection", "cool nights and dry days during flowering"],
-    "treatment": "Sulphur-based or other recommended fungicides protect flowers. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
-    "prevention": [
-      "Protect trees from the start of flowering",
-      "Prune for air flow",
-      "Remove infected shoots"
-    ],
-    "reviewed": false
-  },
   "Cashew___Anthracnose": {
     "diseaseName": "Cashew anthracnose (Colletotrichum gloeosporioides)",
     "cropType": "Cashew",

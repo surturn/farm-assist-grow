@@ -43,7 +43,7 @@ class ManifestTests(unittest.TestCase):
         self.raw = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
     def test_frozen_v1_list(self):
-        self.assertEqual(len(self.m.classes), 33)
+        self.assertEqual(len(self.m.classes), 30)
         for crop in self.m.trained_crops:
             self.assertIn(f"{crop}___Healthy", self.m.classes, crop)
 
@@ -57,6 +57,8 @@ class ManifestTests(unittest.TestCase):
 
     def test_untrained_scope_not_classes(self):
         self.assertIn("Avocado", self.m.not_trained_crops)
+        self.assertIn("Mango", self.m.not_trained_crops)
+        self.assertFalse(any(c.startswith("Mango___") for c in self.m.classes))
         self.assertIn("Mango___Cercospora", self.m.not_trained_labels)
         self.assertNotIn("Mango___Cercospora", self.m.classes)
 

@@ -4,7 +4,7 @@
   "checks": {
     "G1 manifest": {
       "pass": true,
-      "detail": "v1-2026-09-28: 33 classes, 7 crops, each with Healthy"
+      "detail": "v1.1-2026-09-28: 30 classes, 6 crops, each with Healthy"
     },
     "G2 knowledge sync": {
       "pass": true,
@@ -16,11 +16,11 @@
     },
     "G4 labels in manifest": {
       "pass": true,
-      "detail": "42516 rows ok"
+      "detail": "43913 rows ok"
     },
     "G5 group in one split": {
       "pass": true,
-      "detail": "27292 groups; 0 span splits"
+      "detail": "28689 groups; 0 span splits"
     },
     "G6 no identical file across splits": {
       "pass": true,
@@ -32,11 +32,11 @@
     },
     "G8 class coverage": {
       "pass": false,
-      "detail": "14 classes short: Coffee___Cercospora_Leaf_Spot (train 0, val 0, test 0 groups); Coffee___Healthy (train 0, val 0, test 0 groups); Coffee___Leaf_Miner (train 0, val 0, test 0 groups); Coffee___Phoma (train 0, val 0, test 0 groups); Coffee___Rust (train 0, val 0, test 0 groups); Pepper___Anthracnose (train 0, val 0, test 0 groups); Pepper___Mosaic_Virus (train 0, val 0, test 0 groups); Bean___Angular_Leaf_Spot (train 0, val 0, test 0 groups); Bean___Anthracnose (train 0, val 0, test 0 groups); Bean___Healthy (train 0, val 0, test 0 groups); Bean___Rust (train 0, val 0, test 0 groups); Mango___Anthracnose (train 0, val 0, test 0 groups); Mango___Healthy (train 0, val 0, test 0 groups); Mango___Powdery_Mildew (train 0, val 0, test 0 groups)"
+      "detail": "8 classes short: Coffee___Cercospora_Leaf_Spot (train 0, val 0, test 0 groups); Coffee___Healthy (train 0, val 0, test 0 groups); Coffee___Leaf_Miner (train 0, val 0, test 0 groups); Coffee___Phoma (train 0, val 0, test 0 groups); Coffee___Rust (train 0, val 0, test 0 groups); Pepper___Anthracnose (train 0, val 0, test 0 groups); Pepper___Mosaic_Virus (train 0, val 0, test 0 groups); Bean___Anthracnose (train 0, val 0, test 0 groups)"
     },
     "G9 field eval sets": {
       "pass": false,
-      "detail": "no field test images for: ['Coffee', 'Tomato', 'Pepper', 'Potato']"
+      "detail": "no field test images for: ['Coffee']"
     }
   }
 }

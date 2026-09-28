@@ -1,9 +1,9 @@
 {
-  "manifest_version": "v1-2026-09-28",
+  "manifest_version": "v1.1-2026-09-28",
   "seed": 42,
   "max_distance": 24,
   "data_root": "C:\\Users\\semutryr\\Desktop\\Projects\\farm-assist-grow\\AImodel",
-  "images": 42516,
+  "images": 43913,
   "sources_present": [
     {
       "source_id": "plantvillage/train/Tomato___Bacterial_spot",
@@ -284,6 +284,126 @@
       "role": "pool",
       "images": 470,
       "acquire": ""
+    },
+    {
+      "source_id": "ibean/angular_leaf_spot",
+      "path": "external/iBean/angular_leaf_spot",
+      "label": "Bean___Angular_Leaf_Spot",
+      "role": "pool",
+      "images": 432,
+      "acquire": "https://github.com/AI-Lab-Makerere/ibean (MIT)"
+    },
+    {
+      "source_id": "ibean/bean_rust",
+      "path": "external/iBean/bean_rust",
+      "label": "Bean___Rust",
+      "role": "pool",
+      "images": 436,
+      "acquire": "https://github.com/AI-Lab-Makerere/ibean (MIT)"
+    },
+    {
+      "source_id": "ibean/healthy",
+      "path": "external/iBean/healthy",
+      "label": "Bean___Healthy",
+      "role": "pool",
+      "images": 427,
+      "acquire": "https://github.com/AI-Lab-Makerere/ibean (MIT)"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato Early blight leaf",
+      "path": "external/PlantDoc/test/Tomato Early blight leaf",
+      "label": "Tomato___Early_Blight",
+      "role": "field",
+      "images": 9,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato Septoria leaf spot",
+      "path": "external/PlantDoc/test/Tomato Septoria leaf spot",
+      "label": "Tomato___Septoria_Leaf_Spot",
+      "role": "field",
+      "images": 11,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato leaf late blight",
+      "path": "external/PlantDoc/test/Tomato leaf late blight",
+      "label": "Tomato___Late_Blight",
+      "role": "field",
+      "images": 10,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato leaf bacterial spot",
+      "path": "external/PlantDoc/test/Tomato leaf bacterial spot",
+      "label": "Tomato___Bacterial_Spot",
+      "role": "field",
+      "images": 9,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato mold leaf",
+      "path": "external/PlantDoc/test/Tomato mold leaf",
+      "label": "Tomato___Leaf_Mold",
+      "role": "field",
+      "images": 6,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato leaf mosaic virus",
+      "path": "external/PlantDoc/test/Tomato leaf mosaic virus",
+      "label": "Tomato___Mosaic_Virus",
+      "role": "field",
+      "images": 10,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato leaf yellow virus",
+      "path": "external/PlantDoc/test/Tomato leaf yellow virus",
+      "label": "Tomato___Yellow_Leaf_Curl_Virus",
+      "role": "field",
+      "images": 6,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Tomato leaf",
+      "path": "external/PlantDoc/test/Tomato leaf",
+      "label": "Tomato___Healthy",
+      "role": "field",
+      "images": 8,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Bell_pepper leaf spot",
+      "path": "external/PlantDoc/test/Bell_pepper leaf spot",
+      "label": "Pepper___Bacterial_Spot",
+      "role": "field",
+      "images": 9,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Bell_pepper leaf",
+      "path": "external/PlantDoc/test/Bell_pepper leaf",
+      "label": "Pepper___Healthy",
+      "role": "field",
+      "images": 8,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Potato leaf early blight",
+      "path": "external/PlantDoc/test/Potato leaf early blight",
+      "label": "Potato___Early_Blight",
+      "role": "field",
+      "images": 8,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
+    },
+    {
+      "source_id": "plantdoc_field/Potato leaf late blight",
+      "path": "external/PlantDoc/test/Potato leaf late blight",
+      "label": "Potato___Late_Blight",
+      "role": "field",
+      "images": 8,
+      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
     }
   ],
   "sources_missing": [
@@ -326,30 +446,6 @@
       "role": "pool",
       "images": 0,
       "acquire": "https://data.mendeley.com/datasets/t2r6rszp5c/1 and https://data.mendeley.com/datasets/tgv3zb82nd/1"
-    },
-    {
-      "source_id": "ibean/angular_leaf_spot",
-      "path": "external/iBean/angular_leaf_spot",
-      "label": "Bean___Angular_Leaf_Spot",
-      "role": "pool",
-      "images": 0,
-      "acquire": "https://github.com/AI-Lab-Makerere/ibean (MIT)"
-    },
-    {
-      "source_id": "ibean/bean_rust",
-      "path": "external/iBean/bean_rust",
-      "label": "Bean___Rust",
-      "role": "pool",
-      "images": 0,
-      "acquire": "https://github.com/AI-Lab-Makerere/ibean (MIT)"
-    },
-    {
-      "source_id": "ibean/healthy",
-      "path": "external/iBean/healthy",
-      "label": "Bean___Healthy",
-      "role": "pool",
-      "images": 0,
-      "acquire": "https://github.com/AI-Lab-Makerere/ibean (MIT)"
     },
     {
       "source_id": "tzbean/anthracnose",
@@ -398,30 +494,6 @@
       "role": "pool",
       "images": 0,
       "acquire": "https://data.mendeley.com/datasets/wzc6r6w5w5/2 (+ mosaic source to confirm)"
-    },
-    {
-      "source_id": "mangoleafbd/Anthracnose",
-      "path": "external/MangoLeafBD/Anthracnose",
-      "label": "Mango___Anthracnose",
-      "role": "pool",
-      "images": 0,
-      "acquire": "https://data.mendeley.com/datasets/hxsnvwty3r/1"
-    },
-    {
-      "source_id": "mangoleafbd/Powdery Mildew",
-      "path": "external/MangoLeafBD/Powdery Mildew",
-      "label": "Mango___Powdery_Mildew",
-      "role": "pool",
-      "images": 0,
-      "acquire": "https://data.mendeley.com/datasets/hxsnvwty3r/1"
-    },
-    {
-      "source_id": "mangoleafbd/Healthy",
-      "path": "external/MangoLeafBD/Healthy",
-      "label": "Mango___Healthy",
-      "role": "pool",
-      "images": 0,
-      "acquire": "https://data.mendeley.com/datasets/hxsnvwty3r/1"
     },
     {
       "source_id": "bracol/rust",
@@ -480,102 +552,6 @@
       "acquire": "https://data.mendeley.com/datasets/c5yvn32dzg/2"
     },
     {
-      "source_id": "plantdoc_field/Tomato Early blight leaf",
-      "path": "external/PlantDoc/test/Tomato Early blight leaf",
-      "label": "Tomato___Early_Blight",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Tomato Septoria leaf spot",
-      "path": "external/PlantDoc/test/Tomato Septoria leaf spot",
-      "label": "Tomato___Septoria_Leaf_Spot",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Tomato leaf late blight",
-      "path": "external/PlantDoc/test/Tomato leaf late blight",
-      "label": "Tomato___Late_Blight",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Tomato leaf bacterial spot",
-      "path": "external/PlantDoc/test/Tomato leaf bacterial spot",
-      "label": "Tomato___Bacterial_Spot",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Tomato mold leaf",
-      "path": "external/PlantDoc/test/Tomato mold leaf",
-      "label": "Tomato___Leaf_Mold",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Tomato leaf mosaic virus",
-      "path": "external/PlantDoc/test/Tomato leaf mosaic virus",
-      "label": "Tomato___Mosaic_Virus",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Tomato leaf yellow virus",
-      "path": "external/PlantDoc/test/Tomato leaf yellow virus",
-      "label": "Tomato___Yellow_Leaf_Curl_Virus",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Tomato leaf",
-      "path": "external/PlantDoc/test/Tomato leaf",
-      "label": "Tomato___Healthy",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Bell_pepper leaf spot",
-      "path": "external/PlantDoc/test/Bell_pepper leaf spot",
-      "label": "Pepper___Bacterial_Spot",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Bell_pepper leaf",
-      "path": "external/PlantDoc/test/Bell_pepper leaf",
-      "label": "Pepper___Healthy",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Potato leaf early blight",
-      "path": "external/PlantDoc/test/Potato leaf early blight",
-      "label": "Potato___Early_Blight",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
-      "source_id": "plantdoc_field/Potato leaf late blight",
-      "path": "external/PlantDoc/test/Potato leaf late blight",
-      "label": "Potato___Late_Blight",
-      "role": "field",
-      "images": 0,
-      "acquire": "https://github.com/pratikkayal/PlantDoc-Dataset (CC BY 4.0) - test/ folder"
-    },
-    {
       "source_id": "ood/avocado",
       "path": "external/OOD/avocado",
       "label": "OOD___Avocado",
@@ -584,9 +560,9 @@
       "acquire": "field collection"
     },
     {
-      "source_id": "ood/mango_cercospora",
-      "path": "external/OOD/mango_cercospora",
-      "label": "OOD___Mango_Cercospora",
+      "source_id": "ood/mango",
+      "path": "external/OOD/mango",
+      "label": "OOD___Mango",
       "role": "ood",
       "images": 0,
       "acquire": "field collection"
@@ -600,13 +576,7 @@
     "Coffee___Rust",
     "Pepper___Anthracnose",
     "Pepper___Mosaic_Virus",
-    "Bean___Angular_Leaf_Spot",
-    "Bean___Anthracnose",
-    "Bean___Healthy",
-    "Bean___Rust",
-    "Mango___Anthracnose",
-    "Mango___Healthy",
-    "Mango___Powdery_Mildew"
+    "Bean___Anthracnose"
   ],
   "unreadable_images_skipped": [
     {
@@ -672,7 +642,13 @@
         "groups": 213,
         "scored_images": 213
       },
+      "field": {
+        "images": 9,
+        "groups": 9,
+        "scored_images": 9
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -692,7 +668,13 @@
         "groups": 100,
         "scored_images": 100
       },
+      "field": {
+        "images": 9,
+        "groups": 9,
+        "scored_images": 9
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -712,8 +694,14 @@
         "groups": 203,
         "scored_images": 206
       },
+      "field": {
+        "images": 8,
+        "groups": 8,
+        "scored_images": 8
+      },
       "origins": [
         "CCMT raw (Ghana)",
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -733,12 +721,18 @@
         "groups": 188,
         "scored_images": 190
       },
+      "field": {
+        "images": 10,
+        "groups": 10,
+        "scored_images": 10
+      },
       "excluded": {
         "images": 1,
         "groups": 1,
         "scored_images": 1
       },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -758,7 +752,13 @@
         "groups": 95,
         "scored_images": 95
       },
+      "field": {
+        "images": 6,
+        "groups": 6,
+        "scored_images": 6
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -778,7 +778,13 @@
         "groups": 37,
         "scored_images": 37
       },
+      "field": {
+        "images": 10,
+        "groups": 10,
+        "scored_images": 10
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -798,8 +804,14 @@
         "groups": 400,
         "scored_images": 439
       },
+      "field": {
+        "images": 11,
+        "groups": 11,
+        "scored_images": 11
+      },
       "origins": [
         "CCMT raw (Ghana)",
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -839,7 +851,13 @@
         "groups": 245,
         "scored_images": 245
       },
+      "field": {
+        "images": 6,
+        "groups": 6,
+        "scored_images": 6
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -862,7 +880,13 @@
         "groups": 100,
         "scored_images": 100
       },
+      "field": {
+        "images": 9,
+        "groups": 9,
+        "scored_images": 9
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -882,7 +906,13 @@
         "groups": 148,
         "scored_images": 148
       },
+      "field": {
+        "images": 8,
+        "groups": 8,
+        "scored_images": 8
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -890,16 +920,67 @@
       "origins": []
     },
     "Bean___Angular_Leaf_Spot": {
-      "origins": []
+      "train": {
+        "images": 346,
+        "groups": 346,
+        "scored_images": 346
+      },
+      "val": {
+        "images": 43,
+        "groups": 43,
+        "scored_images": 43
+      },
+      "test": {
+        "images": 43,
+        "groups": 43,
+        "scored_images": 43
+      },
+      "origins": [
+        "iBean (Uganda)"
+      ]
     },
     "Bean___Anthracnose": {
       "origins": []
     },
     "Bean___Healthy": {
-      "origins": []
+      "train": {
+        "images": 341,
+        "groups": 341,
+        "scored_images": 341
+      },
+      "val": {
+        "images": 43,
+        "groups": 43,
+        "scored_images": 43
+      },
+      "test": {
+        "images": 43,
+        "groups": 43,
+        "scored_images": 43
+      },
+      "origins": [
+        "iBean (Uganda)"
+      ]
     },
     "Bean___Rust": {
-      "origins": []
+      "train": {
+        "images": 348,
+        "groups": 348,
+        "scored_images": 348
+      },
+      "val": {
+        "images": 44,
+        "groups": 44,
+        "scored_images": 44
+      },
+      "test": {
+        "images": 44,
+        "groups": 44,
+        "scored_images": 44
+      },
+      "origins": [
+        "iBean (Uganda)"
+      ]
     },
     "Potato___Early_Blight": {
       "train": {
@@ -917,7 +998,13 @@
         "groups": 100,
         "scored_images": 100
       },
+      "field": {
+        "images": 8,
+        "groups": 8,
+        "scored_images": 8
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
     },
@@ -957,18 +1044,15 @@
         "groups": 100,
         "scored_images": 100
       },
+      "field": {
+        "images": 8,
+        "groups": 8,
+        "scored_images": 8
+      },
       "origins": [
+        "PlantDoc field (web-sourced)",
         "PlantVillage (augmented)"
       ]
-    },
-    "Mango___Anthracnose": {
-      "origins": []
-    },
-    "Mango___Healthy": {
-      "origins": []
-    },
-    "Mango___Powdery_Mildew": {
-      "origins": []
     },
     "Cashew___Anthracnose": {
       "train": {

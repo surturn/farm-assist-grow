@@ -31,7 +31,7 @@ const cases = JSON.parse(
 ).cases;
 
 test('real manifest and knowledge table pass the boot check', () => {
-    assert.equal(assertKnowledgeMatchesManifest().classes.length, 33);
+    assert.equal(assertKnowledgeMatchesManifest().classes.length, 30);
 });
 
 test('no maize or cassava anywhere in the class list', () => {

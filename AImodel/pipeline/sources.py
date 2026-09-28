@@ -120,14 +120,8 @@ def _build() -> list[Source]:
         out.append(Source(f"chili/{folder}", f"external/Chili/{folder}", label,
                           "pool", "file", "Chili leaf (Bangladesh)", "field", chili))
 
-    # LICENCE BLOCKER: MangoLeafBD is CC BY-NC 3.0 (non-commercial). fetch_datasets.py
-    # refuses it without --allow-noncommercial. Mango classes stay empty (G8 fails)
-    # until a commercial-use source or a licence decision exists.
-    mango = "https://data.mendeley.com/datasets/hxsnvwty3r/1 (CC BY-NC 3.0 - non-commercial)"
-    for folder, label in {"Anthracnose": "Mango___Anthracnose", "Powdery Mildew": "Mango___Powdery_Mildew",
-                          "Healthy": "Mango___Healthy"}.items():
-        out.append(Source(f"mangoleafbd/{folder}", f"external/MangoLeafBD/{folder}", label,
-                          "pool", "file", "MangoLeafBD (Bangladesh)", "field", mango))
+    # Mango deferred to "not sure" (2026-09-28): MangoLeafBD, the only usable
+    # source, is CC BY-NC 3.0 and cannot train a commercial model.
 
     # ── Field evaluation only.
     bracol = "https://data.mendeley.com/datasets/yy2k5y8mxg/1"
@@ -161,8 +155,8 @@ def _build() -> list[Source]:
     # ── OOD probes: must be answered "not sure".
     out.append(Source("ood/avocado", "external/OOD/avocado", "OOD___Avocado", "ood", "file",
                       "Avocado leaves (to collect in Kenya)", "field", "field collection"))
-    out.append(Source("ood/mango_cercospora", "external/OOD/mango_cercospora", "OOD___Mango_Cercospora",
-                      "ood", "file", "Mango cercospora (to collect)", "field", "field collection"))
+    out.append(Source("ood/mango", "external/OOD/mango", "OOD___Mango", "ood", "file",
+                      "Mango leaves, any condition (to collect)", "field", "field collection"))
     return out
 
 
