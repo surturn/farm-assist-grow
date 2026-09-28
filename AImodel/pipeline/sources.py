@@ -120,7 +120,10 @@ def _build() -> list[Source]:
         out.append(Source(f"chili/{folder}", f"external/Chili/{folder}", label,
                           "pool", "file", "Chili leaf (Bangladesh)", "field", chili))
 
-    mango = "https://data.mendeley.com/datasets/hxsnvwty3r/1"
+    # LICENCE BLOCKER: MangoLeafBD is CC BY-NC 3.0 (non-commercial). fetch_datasets.py
+    # refuses it without --allow-noncommercial. Mango classes stay empty (G8 fails)
+    # until a commercial-use source or a licence decision exists.
+    mango = "https://data.mendeley.com/datasets/hxsnvwty3r/1 (CC BY-NC 3.0 - non-commercial)"
     for folder, label in {"Anthracnose": "Mango___Anthracnose", "Powdery Mildew": "Mango___Powdery_Mildew",
                           "Healthy": "Mango___Healthy"}.items():
         out.append(Source(f"mangoleafbd/{folder}", f"external/MangoLeafBD/{folder}", label,
