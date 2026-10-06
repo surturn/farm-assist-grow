@@ -13,7 +13,7 @@ const sourced: KnowledgeEntry = {
   chemicals: [{ activeIngredient: 'Mancozeb', pcpbReg: 'PCPB(CR)0001' }],
   sw: { diseaseName: 'Baa chelewa', symptoms: ['mabaka meusi'], treatment: 'Ondoa mimea iliyoathirika.', prevention: ['Panda kwa nafasi'] },
 };
-const healthy: KnowledgeEntry = { ...sourced, diseaseName: 'Healthy', chemicals: [], treatment: 'No treatment needed.' };
+const healthy: KnowledgeEntry = { ...sourced, diseaseName: 'Healthy', treatment: 'No treatment needed.' };
 
 test('unsourced entry gives name and symptoms only', () => {
   const a = getAdvice('Tomato___Late_Blight', 'en', { Tomato___Late_Blight: base });
@@ -42,6 +42,18 @@ test('Healthy never carries treatment or chemicals', () => {
   assert.equal(a.healthy, true);
   assert.equal(a.treatment, null);
   assert.deepEqual(a.chemicals, []);
+});
+
+test('unregistered chemicals (blank pcpbReg) are filtered out', () => {
+  const mixedChemicals: KnowledgeEntry = {
+    ...sourced,
+    chemicals: [
+      { activeIngredient: 'Mancozeb', pcpbReg: 'PCPB(CR)0001' },
+      { activeIngredient: 'Copper', pcpbReg: '  ' },
+    ],
+  };
+  const a = getAdvice('Tomato___Late_Blight', 'en', { Tomato___Late_Blight: mixedChemicals });
+  assert.deepEqual(a.chemicals, [{ activeIngredient: 'Mancozeb', pcpbReg: 'PCPB(CR)0001' }]);
 });
 
 test('unknown label throws (manifest/KB drift is a bug, not a reply)', () => {
