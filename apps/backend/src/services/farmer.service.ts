@@ -58,6 +58,19 @@ export async function findChannelByPhone(phone: string) {
  */
 export async function touchChannel(phone: string, language?: string) {
   const normalised = normalisePhone(phone);
+  try {
+    return await upsertChannel(normalised, language);
+  } catch (error: any) {
+    // A new farmer's first messages arrive together and the worker runs them
+    // concurrently. Prisma's upsert here is find-then-create (the include
+    // rules out a native ON CONFLICT), so all but one create lose with P2002.
+    // By then the row exists, and a second attempt takes the update path.
+    if (error?.code === 'P2002') return upsertChannel(normalised, language);
+    throw error;
+  }
+}
+
+function upsertChannel(normalised: string, language?: string) {
   return prisma.farmerChannel.upsert({
     where: { phone: normalised },
     create: {
