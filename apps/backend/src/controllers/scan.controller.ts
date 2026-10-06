@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as scanService from '../services/scan.service';
 import { userCanAccessFarm } from '../services/farmAccess.service';
+import { parseImageDataUrl } from '../services/imageStore.service';
 
 export const getScans = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -21,28 +22,54 @@ export const getScans = async (req: Request, res: Response): Promise<any> => {
 };
 
 export const createScan = async (req: Request, res: Response): Promise<any> => {
+    const userId = req.user?.id;
+    if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Only the image and farm are accepted. Any diagnosis fields in the body
+    // are ignored: the server is the only source of a diagnosis.
+    const { imageBase64, farmId } = req.body ?? {};
+
+    if (farmId && !(await userCanAccessFarm(userId, farmId))) {
+        return res.status(403).json({ error: 'You do not have access to this farm' });
+    }
+
+    const image = parseImageDataUrl(imageBase64);
+    if ('error' in image) {
+        return res.status(400).json({ error: image.error });
+    }
+
     try {
-        const userId = req.user?.id;
-        if (!userId) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-
-        const { farmId, imageUrl, diseaseName, confidence, treatment } = req.body;
-
-        // Same reasoning as tasks and farm notes: a body-supplied farmId must
-        // be checked against the caller's memberships, not trusted.
-        if (farmId && !(await userCanAccessFarm(userId, farmId))) {
-            return res.status(403).json({ error: 'You do not have access to this farm' });
-        }
-
-        const newScan = await scanService.createScan(
+        const { scan, analysis } = await scanService.diagnoseAndRecord(
             { userId },
-            { farmId, imageUrl, diseaseName, confidence, treatment }
+            { farmId, bytes: image.bytes, mimeType: image.mimeType }
         );
-
-        return res.status(201).json(newScan);
+        return res.status(201).json({ scan, analysis });
     } catch (error: any) {
-        console.error('Create Scan Error:', error);
-        return res.status(500).json({ error: 'Failed to create scan', details: error.message });
+        console.error('Diagnosis Error:', error);
+        return res.status(502).json({ error: 'Diagnosis failed. Please try again.' });
+    }
+};
+
+export const verifyScan = async (req: Request, res: Response): Promise<any> => {
+    const userId = req.user?.id;
+    if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const { correct, label } = req.body ?? {};
+    if (typeof correct !== 'boolean') {
+        return res.status(400).json({ error: '"correct" must be true or false' });
+    }
+    try {
+        const scan = await scanService.verifyScan(userId, String(req.params.id), {
+            correct,
+            label: typeof label === 'string' ? label : undefined,
+        });
+        if (!scan) return res.status(404).json({ error: 'Scan not found' });
+        return res.status(200).json(scan);
+    } catch (error: any) {
+        console.error('Verify Scan Error:', error);
+        return res.status(500).json({ error: 'Failed to verify scan' });
     }
 };

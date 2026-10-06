@@ -10,7 +10,6 @@ COPY packages/ai/package.json ./packages/ai/package.json
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/firebase-admin/package.json ./packages/firebase-admin/package.json
 COPY packages/shared-types/package.json ./packages/shared-types/package.json
-COPY infrastructure/queue/package.json ./infrastructure/queue/package.json
 COPY infrastructure/redis/package.json ./infrastructure/redis/package.json
 
 RUN npm ci

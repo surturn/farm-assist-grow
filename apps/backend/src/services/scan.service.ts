@@ -1,4 +1,6 @@
 import { prisma } from '@farmassist/database';
+import { openaiVision, type Analysis } from '@farmassist/ai';
+import { saveScanImage } from './imageStore.service';
 
 /**
  * Scan persistence. Two callers reach this: the REST controller, where a scan
@@ -25,6 +27,8 @@ export interface ScanResult {
   diseaseName?: string | null;
   confidence?: number | null;
   treatment?: string | null;
+  analysis?: Analysis | null;
+  model?: string | null;
 }
 
 export async function listScansForUser(
@@ -53,6 +57,8 @@ export async function createScan(origin: ScanOrigin, result: ScanResult) {
       diseaseName: result.diseaseName ?? null,
       confidence: result.confidence ?? null,
       treatment: result.treatment ?? null,
+      analysis: (result.analysis ?? undefined) as any,
+      model: result.model ?? null,
     },
   });
 }
@@ -97,4 +103,49 @@ export async function backfillChannelScansToUser(channelId: string, userId: stri
     data: { userId },
   });
   return count;
+}
+
+/**
+ * The one place a diagnosis is written. Every surface (dashboard now,
+ * WhatsApp and Telegram later) calls this, so every diagnosis leaves a
+ * training example: the stored image, the raw model output and the model id.
+ * The image is stored before the model runs, so a failed call still keeps it.
+ */
+export async function diagnoseAndRecord(
+  origin: ScanOrigin,
+  input: { farmId?: string | null; bytes: Buffer; mimeType: string }
+) {
+  const imageUrl = await saveScanImage(input.bytes, input.mimeType);
+  const { analysis, model } = await openaiVision.diagnose(input.bytes, input.mimeType);
+  const scan = await createScan(origin, {
+    farmId: input.farmId ?? null,
+    imageUrl,
+    diseaseName: analysis.diseaseName,
+    confidence: analysis.confidence,
+    treatment: analysis.treatment || null,
+    analysis,
+    model,
+  });
+  return { scan, analysis };
+}
+
+/** Returns null when the scan does not exist or is not the caller's. */
+export async function verifyScan(
+  userId: string,
+  scanId: string,
+  input: { correct: boolean; label?: string }
+) {
+  const scan = await prisma.scan.findUnique({ where: { id: scanId } });
+  if (!scan || scan.userId !== userId) return null;
+  // An agronomist's label outranks the farmer's.
+  if (scan.verifiedBy && scan.verifiedBy !== 'farmer') return scan;
+
+  const verifiedLabel = input.correct
+    ? scan.diseaseName
+    : (input.label?.trim().slice(0, 100) || 'rejected');
+
+  return prisma.scan.update({
+    where: { id: scanId },
+    data: { verifiedLabel, verifiedBy: 'farmer' },
+  });
 }

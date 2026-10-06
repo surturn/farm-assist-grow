@@ -1,34 +1,24 @@
 import { redis } from '@farmassist/redis';
 import crypto from 'crypto';
+import { loadClassManifest } from './manifest';
 
 export { assertKnowledgeMatchesManifest, loadClassManifest, loadKnowledge } from './manifest';
 export { decide } from './abstention';
 
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB limit
+export interface Analysis {
+    diseaseName: string;
+    confidence: number; // 0-100
+    cropType: string;
+    severity: string;
+    symptoms: string[];
+    possibleCauses: string[];
+    treatment: string;
+    prevention: string[];
+}
 
-export const analyzeCropImage = async (imageBase64: string, farmId?: string) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error('OpenAI API key missing');
+const SUPPORTED_CROPS = loadClassManifest().trainedCrops;
 
-    // Basic payload size validation
-    const sizeInBytes = (imageBase64.length * (3 / 4)) - (imageBase64.endsWith('==') ? 2 : imageBase64.endsWith('=') ? 1 : 0);
-    if (sizeInBytes > MAX_IMAGE_SIZE_BYTES) {
-        throw new Error('Image size exceeds 10MB limit. Please compress the image.');
-    }
-
-    const imageHash = crypto.createHash('sha256').update(imageBase64).digest('hex');
-    const cacheKey = `crop_analysis:${imageHash}`;
-
-    // 1. Check Redis Cache
-    const cachedResult = await redis.get(cacheKey);
-    if (cachedResult) {
-        console.log('Cache hit for crop analysis');
-        return JSON.parse(cachedResult);
-    }
-
-    console.log('Cache miss for crop analysis, calling OpenAI...');
-
-    const systemPrompt = `You are a professional agricultural pathologist and plant disease specialist with expertise in crop pathology, agronomy, and pest management.
+const SYSTEM_PROMPT = `You are a professional agricultural pathologist and plant disease specialist with expertise in crop pathology, agronomy, and pest management.
 
 Your task is to analyze the provided crop image and diagnose potential plant diseases based on visible symptoms.
 
@@ -72,7 +62,11 @@ You MUST return a valid JSON object with EXACTLY the following structure:
   ]
 }
 
+Supported crops: ${SUPPORTED_CROPS.join(', ')}.
+
 Diagnostic Rules:
+
+0. If the crop is not one of the supported crops, return "diseaseName": "Unsupported crop", the identified "cropType", "confidence": 0, "severity": "Healthy", empty arrays, and "treatment": "". Do not diagnose it.
 
 1. Carefully identify the crop type before diagnosing disease.
 2. Evaluate leaf patterns such as spots, lesions, yellowing, wilting, mold growth.
@@ -90,50 +84,63 @@ Diagnostic Rules:
 Important:
 Return ONLY valid JSON. Do NOT include explanations or extra text.`;
 
-    const userPrompt = `Please analyze this crop image for any diseases or health issues.`;
-    
-    // Model should ideally come from env config, fallback to gpt-4o
-    const aiModel = process.env.AI_MODEL || 'gpt-4o';
+const sha256 = (data: string | Buffer) => crypto.createHash('sha256').update(data).digest('hex');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-            model: aiModel,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                {
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: userPrompt },
-                        { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } }
-                    ]
-                }
-            ],
-            max_tokens: 1500,
-            temperature: 0.2,
-            response_format: { type: 'json_object' },
-        }),
-    });
+/**
+ * Wrapped in an object so tests can replace diagnose, the same way the
+ * integration test stubs authAdmin.verifyIdToken.
+ */
+export const openaiVision = {
+    diagnose: async (image: Buffer, mimeType: string): Promise<{ analysis: Analysis; model: string }> => {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) throw new Error('OpenAI API key missing');
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`OpenAI API Failed: ${JSON.stringify(errorData)}`);
-    }
+        const aiModel = process.env.AI_MODEL || 'gpt-4o';
+        // The prompt hash is part of the identity: a prompt change is a new
+        // model as far as training labels are concerned.
+        const model = `openai:${aiModel}@${sha256(SYSTEM_PROMPT).slice(0, 8)}`;
+        const cacheKey = `crop_analysis:${model}:${sha256(image)}`;
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+        const cached = await redis.get(cacheKey);
+        if (cached) return { analysis: JSON.parse(cached), model };
 
-    if (!content) throw new Error('No content returned from OpenAI');
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+            body: JSON.stringify({
+                model: aiModel,
+                messages: [
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'text', text: 'Please analyze this crop image for any diseases or health issues.' },
+                            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${image.toString('base64')}`, detail: 'high' } },
+                        ],
+                    },
+                ],
+                max_tokens: 1500,
+                temperature: 0.2,
+                response_format: { type: 'json_object' },
+            }),
+        });
 
-    const parsedResult = JSON.parse(content);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`OpenAI API Failed: ${JSON.stringify(errorData)}`);
+        }
 
-    // Cache the result. TTL from env, fallback to 7 days
-    const ttl = process.env.AI_CACHE_TTL ? parseInt(process.env.AI_CACHE_TTL, 10) : 604800;
-    await redis.setex(cacheKey, ttl, JSON.stringify(parsedResult));
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) throw new Error('No content returned from OpenAI');
 
-    return parsedResult;
+        const analysis = JSON.parse(content) as Analysis;
+        if (typeof analysis.diseaseName !== 'string' || typeof analysis.confidence !== 'number') {
+            throw new Error('OpenAI returned an analysis without diseaseName/confidence');
+        }
+
+        const ttl = process.env.AI_CACHE_TTL ? parseInt(process.env.AI_CACHE_TTL, 10) : 604800;
+        await redis.setex(cacheKey, ttl, JSON.stringify(analysis));
+        return { analysis, model };
+    },
 };

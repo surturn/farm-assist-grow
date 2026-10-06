@@ -35,6 +35,7 @@ serviceAccountKey.json
 # Runtime-uploaded user media (never source)
 /public/uploads
 /apps/backend/public/avatars/
+/apps/backend/data/
 
 # Python / ML environment
 /AImodel/venv
