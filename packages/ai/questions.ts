@@ -8,7 +8,7 @@ export interface Question { id: string; text: LocalText; options: QuestionOption
 export interface QuestionPair { labels: [string, string]; source: { title: string; url: string } | null; questions: Question[] }
 
 export const loadQuestions = (): QuestionPair[] =>
-    JSON.parse(fs.readFileSync(path.join(__dirname, 'questions.json'), 'utf-8')).pairs;
+    JSON.parse(fs.readFileSync(path.join(__dirname, 'question-bank.json'), 'utf-8')).pairs;
 
 /** Only pairs with a cited source may be asked (provenance gate). */
 export function pairFor(a: string, b: string, pairs: QuestionPair[]): QuestionPair | null {

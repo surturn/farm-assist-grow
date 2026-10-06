@@ -4,7 +4,6 @@ import { loadClassManifest } from './manifest';
 
 export { assertKnowledgeMatchesManifest, loadClassManifest, loadKnowledge } from './manifest';
 export { decide } from './abstention';
-export { loadQuestions, pairFor, nextQuestion, applyAnswer, checkQuestions, type LocalText, type QuestionOption, type Question, type QuestionPair } from './questions';
 
 export interface Analysis {
     diseaseName: string;
