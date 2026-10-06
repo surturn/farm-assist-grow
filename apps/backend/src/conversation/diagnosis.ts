@@ -4,7 +4,7 @@ import { checkClassifierOutput } from '@farmassist/ai/checker';
 import { applyAnswer, nextQuestion, pairFor, type QuestionPair } from '@farmassist/ai/questions';
 import { bandFor } from '@farmassist/ai/rules';
 import {
-  StaleAnswerError, type DiagnosisDeps, type DiagnosisStep, type Owner, type QuestionView,
+  DuplicateMessageError, StaleAnswerError, type DiagnosisDeps, type DiagnosisStep, type Owner, type QuestionView,
   type ScanOriginInput, type ScanWrite, type TraceEntry,
 } from './types';
 
@@ -48,6 +48,8 @@ function resolve(deps: DiagnosisDeps, scanId: string, probs: Record<string, numb
 
 export async function startDiagnosis(deps: DiagnosisDeps, origin: ScanOriginInput,
   image: { bytes: Buffer; mimeType: string }, lang: Lang): Promise<DiagnosisStep> {
+  // A replayed delivery must never re-diagnose or reset the scan it already made.
+  if (origin.waMessageId && await deps.findScanByMessage(origin.waMessageId)) throw new DuplicateMessageError(origin.waMessageId);
   const imageUrl = await deps.saveImage(image.bytes, image.mimeType);
   const { raw, model } = await deps.classify(image.bytes, image.mimeType);
   const checked = checkClassifierOutput(raw, deps.manifest);
@@ -55,14 +57,18 @@ export async function startDiagnosis(deps: DiagnosisDeps, origin: ScanOriginInpu
 
   const rejected = (reason: 'unreadable' | 'unsupported' | 'not_plant', diseaseName: string, crop: string | null) =>
     deps.createScan(origin, { imageUrl, model, analysis: { raw }, diseaseName, confidence: null, trace, reviewStatus: null })
-      .then(({ id }): DiagnosisStep => ({ scanId: id, band: 'rejected', reason, label: null, crop, confidence: 0, advice: null, question: null }));
+      .then(({ id, created }): DiagnosisStep => {
+        if (!created) throw new DuplicateMessageError(origin.waMessageId ?? id);
+        return { scanId: id, band: 'rejected', reason, label: null, crop, confidence: 0, advice: null, question: null };
+      });
 
   if (!checked.ok) return rejected('unreadable', 'Unreadable photo', null);
   if (checked.value.kind === 'not_plant') return rejected('not_plant', 'Not a plant', null);
   if (checked.value.kind === 'unsupported') return rejected('unsupported', 'Unsupported crop', checked.value.crop);
 
   const { crop, probs } = checked.value;
-  const { id } = await deps.createScan(origin, { imageUrl, model, analysis: { raw, crop, probs }, diseaseName: 'Not sure', confidence: null, answers: [], trace, reviewStatus: null });
+  const { id, created } = await deps.createScan(origin, { imageUrl, model, analysis: { raw, crop, probs }, diseaseName: 'Not sure', confidence: null, answers: [], trace, reviewStatus: null });
+  if (!created) throw new DuplicateMessageError(origin.waMessageId ?? id);
   const { step, write } = resolve(deps, id, probs, crop, [], lang, trace);
   await deps.updateScan(id, { ...write, imageUrl, model, analysis: { raw, crop, probs, pendingQuestion: step.question?.id ?? null }, answers: [], trace });
   return step;

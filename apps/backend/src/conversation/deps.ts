@@ -15,6 +15,7 @@ export function realDeps(): DiagnosisDeps {
     questions: loadQuestions(),
     classify: (bytes, mime) => classifier.classify(bytes, mime),
     saveImage: saveScanImage,
+    findScanByMessage: scanService.findScanByMessage,
     createScan: scanService.createScanWith,
     getScan: scanService.getScanState,
     updateScan: scanService.updateScanState,

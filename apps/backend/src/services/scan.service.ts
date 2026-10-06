@@ -159,10 +159,24 @@ export async function createScanWith(origin: ScanOriginInput, data: ScanWrite) {
     analysis: data.analysis as any, model: data.model ?? null, answers: (data.answers ?? []) as any,
     trace: data.trace as any, reviewStatus: data.reviewStatus,
   };
-  if (!origin.waMessageId) return prisma.scan.create({ data: fields, select: { id: true } });
-  // Replayed WhatsApp delivery: return the scan already made for this message.
-  const existing = await prisma.scan.findUnique({ where: { waMessageId: origin.waMessageId }, select: { id: true } });
-  return existing ?? prisma.scan.create({ data: fields, select: { id: true } });
+  if (!origin.waMessageId) return { ...(await prisma.scan.create({ data: fields, select: { id: true } })), created: true };
+  // Replayed WhatsApp delivery: report the scan already made for this message.
+  const existing = await findScanByMessage(origin.waMessageId);
+  if (existing) return { ...existing, created: false };
+  try {
+    return { ...(await prisma.scan.create({ data: fields, select: { id: true } })), created: true };
+  } catch (error: any) {
+    // Two deliveries of the same message can race past the lookup above.
+    if (error?.code === 'P2002') {
+      const scan = await findScanByMessage(origin.waMessageId);
+      if (scan) return { ...scan, created: false };
+    }
+    throw error;
+  }
+}
+
+export function findScanByMessage(waMessageId: string) {
+  return prisma.scan.findUnique({ where: { waMessageId }, select: { id: true } });
 }
 
 export async function getScanState(id: string): Promise<ScanState | null> {

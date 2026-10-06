@@ -29,7 +29,8 @@ export interface DiagnosisDeps {
   questions: QuestionPair[];
   classify(image: Buffer, mimeType: string): Promise<{ raw: unknown; model: string }>;
   saveImage(bytes: Buffer, mimeType: string): Promise<string>;
-  createScan(origin: ScanOriginInput, data: ScanWrite): Promise<{ id: string }>;
+  findScanByMessage(waMessageId: string): Promise<{ id: string } | null>;
+  createScan(origin: ScanOriginInput, data: ScanWrite): Promise<{ id: string; created: boolean }>;
   getScan(id: string): Promise<ScanState | null>;
   updateScan(id: string, data: ScanWrite): Promise<void>;
 }
@@ -38,5 +39,6 @@ export interface ScanWrite {
   answers?: { questionId: string; optionId: string }[]; trace: TraceEntry[]; reviewStatus: string | null;
 }
 export class StaleAnswerError extends Error {}
+export class DuplicateMessageError extends Error {}
 export interface OutboundMessage { text: string; buttons?: { id: string; title: string }[] }
 export type { Lang };

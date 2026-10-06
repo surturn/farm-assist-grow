@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadClassManifest, loadKnowledge } from '@farmassist/ai/manifest';
 import type { QuestionPair } from '@farmassist/ai/questions';
 import { answerQuestion, startDiagnosis } from '../../src/conversation/diagnosis';
-import { StaleAnswerError, type DiagnosisDeps, type ScanState, type ScanWrite } from '../../src/conversation/types';
+import { DuplicateMessageError, StaleAnswerError, type DiagnosisDeps, type ScanState, type ScanWrite } from '../../src/conversation/types';
 
 const pair: QuestionPair = {
   labels: ['Tomato___Early_Blight', 'Tomato___Late_Blight'],
@@ -22,19 +22,24 @@ const pair: QuestionPair = {
 
 function fakeDeps(raw: unknown) {
   const scans = new Map<string, ScanState & { write: ScanWrite }>();
+  const byMessage = new Map<string, string>();
+  const calls = { classify: 0, saveImage: 0 };
   let n = 0;
   const deps: DiagnosisDeps = {
     manifest: loadClassManifest(),
     knowledge: loadKnowledge(),
     questions: [pair],
-    classify: async () => ({ raw, model: 'fake@1' }),
-    saveImage: async () => 'scans/x.jpg',
+    classify: async () => { calls.classify++; return { raw, model: 'fake@1' }; },
+    saveImage: async () => { calls.saveImage++; return 'scans/x.jpg'; },
+    findScanByMessage: async (w) => (byMessage.has(w) ? { id: byMessage.get(w)! } : null),
     createScan: async (origin, data) => {
+      if (origin.waMessageId && byMessage.has(origin.waMessageId)) return { id: byMessage.get(origin.waMessageId)!, created: false };
       const id = `s${++n}`;
       const a = data.analysis as any;
       scans.set(id, { id, userId: origin.userId ?? null, channelId: origin.channelId ?? null, verifiedLabel: null,
         probs: a?.probs ?? null, crop: a?.crop ?? null, answers: data.answers ?? [], pendingQuestion: a?.pendingQuestion ?? null, trace: data.trace, write: data });
-      return { id };
+      if (origin.waMessageId) byMessage.set(origin.waMessageId, id);
+      return { id, created: true };
     },
     getScan: async (id) => scans.get(id) ?? null,
     updateScan: async (id, data) => {
@@ -43,7 +48,7 @@ function fakeDeps(raw: unknown) {
       scans.set(id, { ...s, probs: a?.probs ?? s.probs, answers: data.answers ?? s.answers, pendingQuestion: a && 'pendingQuestion' in a ? a.pendingQuestion : s.pendingQuestion, trace: data.trace, write: data });
     },
   };
-  return { deps, scans };
+  return { deps, scans, calls };
 }
 
 const img = { bytes: Buffer.from('x'), mimeType: 'image/jpeg' };
@@ -121,4 +126,45 @@ test('close call with no sourced pair is uncertain, not asked', async () => {
   deps.questions = [{ ...pair, source: null }];
   const step = await startDiagnosis(deps, { userId: 'u1' }, img, 'en');
   assert.equal(step.band, 'uncertain');
+});
+
+test('replayed delivery throws and never re-classifies or resets the scan', async () => {
+  const { deps, scans, calls } = fakeDeps(closeRaw);
+  const origin = { channelId: 'c1', waMessageId: 'w1' };
+  const s1 = await startDiagnosis(deps, origin, img, 'en');
+  const before = JSON.stringify(scans.get(s1.scanId));
+  await assert.rejects(startDiagnosis(deps, origin, img, 'en'), DuplicateMessageError);
+  assert.deepEqual([calls.classify, calls.saveImage], [1, 1]);
+  assert.equal(JSON.stringify(scans.get(s1.scanId)), before);
+  assert.equal(scans.get(s1.scanId)!.pendingQuestion, 'q1');
+  assert.deepEqual(scans.get(s1.scanId)!.answers, []);
+});
+
+test('createScan reporting created:false (race) throws without updating', async () => {
+  const { deps, scans } = fakeDeps(closeRaw);
+  const create = deps.createScan;
+  deps.createScan = async (o, d) => ({ ...(await create(o, d)), created: false });
+  await assert.rejects(startDiagnosis(deps, { channelId: 'c1' }, img, 'en'), DuplicateMessageError);
+  assert.equal(scans.get('s1')!.pendingQuestion, null);
+});
+
+test('question cap stops at 2 even when a third sourced question exists', async () => {
+  const { deps } = fakeDeps(closeRaw);
+  const q = (id: string) => ({ id, text: { en: id, sw: id }, options: [{ id: 'unsure', text: { en: 'Not sure', sw: 'Sijui' }, favours: null, weight: 0.5 }] });
+  deps.questions = [{ ...pair, questions: [q('a'), q('b'), q('c')] }];
+  const s1 = await startDiagnosis(deps, { userId: 'u1' }, img, 'en');
+  assert.equal(s1.question?.id, 'a');
+  const s2 = await answerQuestion(deps, { userId: 'u1' }, s1.scanId, 'a', 'unsure', 'en');
+  assert.equal(s2.band, 'ask');
+  const s3 = await answerQuestion(deps, { userId: 'u1' }, s1.scanId, 'b', 'unsure', 'en');
+  assert.equal(s3.band, 'uncertain');
+});
+
+test('channel-owned scan: only that channel may answer', async () => {
+  const { deps } = fakeDeps(closeRaw);
+  const s1 = await startDiagnosis(deps, { channelId: 'c1' }, img, 'en');
+  await assert.rejects(answerQuestion(deps, { channelId: 'c2' }, s1.scanId, 'q1', 'lower', 'en'), StaleAnswerError);
+  await assert.rejects(answerQuestion(deps, {}, s1.scanId, 'q1', 'lower', 'en'), StaleAnswerError);
+  const s2 = await answerQuestion(deps, { channelId: 'c1' }, s1.scanId, 'q1', 'lower', 'en');
+  assert.equal(s2.band, 'confident');
 });
