@@ -1,6 +1,7 @@
 import { prisma } from '@farmassist/database';
 import { openaiVision, type Analysis } from '@farmassist/ai';
 import { saveScanImage } from './imageStore.service';
+import type { ScanOriginInput, ScanState, ScanWrite } from '../conversation/types';
 
 /**
  * Scan persistence. Two callers reach this: the REST controller, where a scan
@@ -147,5 +148,42 @@ export async function verifyScan(
   return prisma.scan.update({
     where: { id: scanId },
     data: { verifiedLabel, verifiedBy: 'farmer' },
+  });
+}
+
+export async function createScanWith(origin: ScanOriginInput, data: ScanWrite) {
+  const fields = {
+    userId: origin.userId ?? null, channelId: origin.channelId ?? null, farmId: origin.farmId ?? null,
+    waMessageId: origin.waMessageId ?? null, mediaId: origin.mediaId ?? null, workerVersion: origin.workerVersion ?? null,
+    imageUrl: data.imageUrl ?? null, diseaseName: data.diseaseName, confidence: data.confidence,
+    analysis: data.analysis as any, model: data.model ?? null, answers: (data.answers ?? []) as any,
+    trace: data.trace as any, reviewStatus: data.reviewStatus,
+  };
+  if (!origin.waMessageId) return prisma.scan.create({ data: fields, select: { id: true } });
+  // Replayed WhatsApp delivery: return the scan already made for this message.
+  const existing = await prisma.scan.findUnique({ where: { waMessageId: origin.waMessageId }, select: { id: true } });
+  return existing ?? prisma.scan.create({ data: fields, select: { id: true } });
+}
+
+export async function getScanState(id: string): Promise<ScanState | null> {
+  const s = await prisma.scan.findUnique({ where: { id } });
+  if (!s) return null;
+  const a = (s.analysis ?? {}) as { probs?: Record<string, number>; crop?: string; pendingQuestion?: string | null };
+  return {
+    id: s.id, userId: s.userId, channelId: s.channelId, verifiedLabel: s.verifiedLabel,
+    probs: a.probs ?? null, crop: a.crop ?? null,
+    answers: (s.answers ?? []) as ScanState['answers'], pendingQuestion: a.pendingQuestion ?? null, trace: (s.trace ?? []) as any as ScanState['trace'],
+  };
+}
+
+export async function updateScanState(id: string, data: ScanWrite) {
+  const prev = await prisma.scan.findUnique({ where: { id }, select: { analysis: true } });
+  await prisma.scan.update({
+    where: { id },
+    data: {
+      diseaseName: data.diseaseName, confidence: data.confidence, reviewStatus: data.reviewStatus,
+      analysis: { ...((prev?.analysis as object) ?? {}), ...((data.analysis as object) ?? {}) } as any,
+      answers: (data.answers ?? undefined) as any, trace: data.trace as any,
+    },
   });
 }
