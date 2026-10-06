@@ -21,6 +21,15 @@ codebase down to four things and nothing else:
 3. **AI inference** — one server-side `diagnose()` that every surface calls.
 4. **Dashboard** — landing page, auth, dashboard home, scan, farms and settings.
 
+**The product is the chatbot.** Farmers meet FarmAssist inside an app they already use
+(WhatsApp, Telegram, and later USSD) and never have to learn a new system. Which channel carries
+the conversation does not matter. The dashboard is a secondary surface for records and settings.
+The channel-neutral conversation core and the low-confidence question flow are specified
+separately in the Conversational Diagnosis Core spec. This spec only clears the ground for it.
+
+**Supported crops:** tomato, potato, pepper, cashew and coffee. Cassava and maize are dropped,
+per the agronomist review.
+
 It also removes duplicated data paths and redundant business logic found along the way.
 
 ### Goal: a minimal MVP with the moat as its core
@@ -156,6 +165,9 @@ WhatsApp:   inbound.worker ──(future milestone)──▶ diagnose(image) ─
   `confidence` or `treatment` from the client.
 - The scan is stored with the full training example defined in §4.1.
 - The `rateLimiter` middleware that guarded `/crops/analyze` moves onto `POST /scans`.
+- The `diagnose()` prompt is restricted to the five supported crops. A photo of any other crop
+  returns `diseaseName: "Unsupported crop"` with the identified `cropType`, and no treatment is
+  given. These scans are still captured (§4.1) because they show which crop to support next.
 - Errors: `diagnose()` failures return 502 with a short message; the frontend shows a toast and
   lets the user retry. There is no fallback disease list.
 - `Scan.tsx` loses the polling loop, the Firestore fallback, and the product recommendation
