@@ -23,12 +23,30 @@ codebase down to four things and nothing else:
 
 It also removes duplicated data paths and redundant business logic found along the way.
 
+### Goal: a minimal MVP with the moat as its core
+
+The MVP should have as few features as possible, and every one of them should feed one moat:
+**a verified-data flywheel.** The loop is: a farmer sends a photo, the model diagnoses it, a
+human confirms or corrects the diagnosis, the confirmed example becomes training data, and the
+local model (see the Local-First spec) gets better and cheaper than any competitor's. A
+competitor can copy the features. It cannot buy a growing set of verified, in-field photos of
+Kenyan crops.
+
+The moat is not a feature added on top. It is a rule that applies to every surface: **any
+diagnosis must leave behind a training example** (the image, what the model said, which model
+said it, and a slot for the verified label). A surface that diagnoses without capturing that
+example is a bug. §4.1 defines the capture. Features are judged by whether they feed this loop:
+scan, the WhatsApp and Telegram channels, and farmer confirmation feed it; a shop, task lists and
+a news feed do not.
+
 ### Success criteria
 
 - Every route, page, service, package, and schema model left in the repo is reachable from one of
   the four surfaces above.
 - Crop diagnosis runs in exactly one place (the backend), and the client never supplies a
   diagnosis result.
+- Every dashboard scan leaves behind a stored image, the model's raw output, the model name, and
+  a nullable verified label. The farmer can confirm or reject the diagnosis in one tap.
 - User profile data has one source of truth (Prisma). Firestore is no longer read or written.
 - `npm run build` passes for frontend and backend; the WhatsApp inbound test script and the
   backend integration test pass (updated for removed endpoints).
@@ -39,7 +57,12 @@ It also removes duplicated data paths and redundant business logic found along t
   (`phone`, `waMessageId`) stays WhatsApp-shaped; the Telegram spec will generalise it with a
   concrete second channel in hand.
 - Diagnosing WhatsApp images. The worker gains access to `diagnose()` but wiring it into the
-  image intent belongs to the WhatsApp channel milestones.
+  image intent belongs to the WhatsApp channel milestones. When it is wired, it must use the same
+  capture as §4.1, which is why capture lives in `scanService` and not in the controller.
+- An agronomist review queue. `Scan.reviewStatus` already exists for it; the UI comes later.
+  Farmer confirmation is the only label source in this MVP.
+- Dataset export tooling. The rows and image files are the dataset; an export script gets
+  written when the first training run needs one.
 - Local model training and serving. `AImodel/` and the local-first spec are untouched.
 - Landing page redesign. It stays as is.
 
@@ -92,7 +115,9 @@ route and page go; the model and service stay.
 ### Schema
 
 Drop `Notification`, `Task`, `Crop`, `Agrovet`, `Product`, `NewsItem` and their relation fields
-on `User` and `Farm`. The repo has no tracked migrations directory, so the change is applied with
+on `User` and `Farm`. Add `Scan.analysis`, `Scan.model`, `Scan.verifiedLabel` and
+`Scan.verifiedBy` (§4.1), all nullable so that existing rows remain valid. The repo has no
+tracked migrations directory, so the change is applied with
 `prisma db push`. **This deletes those tables and their rows.** Take a `pg_dump` of the dev
 database before pushing.
 
@@ -129,12 +154,47 @@ WhatsApp:   inbound.worker ──(future milestone)──▶ diagnose(image) ─
   stores the scan with the server's result, and returns the scan plus the full analysis
   (symptoms, causes, treatment, prevention) for display. It no longer accepts `diseaseName`,
   `confidence` or `treatment` from the client.
-- `imageUrl` is not populated by this endpoint; image storage is not part of this cut.
+- The scan is stored with the full training example defined in §4.1.
 - The `rateLimiter` middleware that guarded `/crops/analyze` moves onto `POST /scans`.
 - Errors: `diagnose()` failures return 502 with a short message; the frontend shows a toast and
   lets the user retry. There is no fallback disease list.
 - `Scan.tsx` loses the polling loop, the Firestore fallback, and the product recommendation
   panel.
+
+### 4.1 Training-example capture (the moat)
+
+`scanService.createScan` is the only place a diagnosis is written, so it is the only place that
+captures training data. Every caller (the dashboard now, WhatsApp and Telegram later) gets the
+capture without doing anything extra.
+
+- **Image.** The image bytes are written to `apps/backend/data/scans/<sha256>.jpg`, with the
+  sha256 taken over the bytes. `packages/ai` already hashes images for its cache, so the hash is
+  computed once and reused. Duplicate uploads land on the same file. `Scan.imageUrl` stores the
+  key (`scans/<sha256>.jpg`), not a public URL. These images are farm data and the core asset,
+  so they are **not** served from `/api/v1/public` like avatars are. Docker Compose gets a volume
+  for `apps/backend/data`, and the directory is gitignored.
+  `// ponytail: local disk; move to object storage when the backend runs on more than one host.`
+- **Model output.** A new `Scan.analysis Json?` column stores the raw `diagnose()` result
+  (crop type, severity, symptoms, causes, treatment, prevention) exactly as the model returned
+  it. `diseaseName`, `confidence` and `treatment` stay as columns for querying and display.
+- **Model identity.** A new `Scan.model String?` column, for example
+  `openai:<AI_MODEL>@<prompt-hash>` today and `local:yolo11s-cls@<run>` later. Labels are only useful
+  for training if you know which model produced the prediction being labelled. The existing
+  `workerVersion` column keeps its WhatsApp-worker meaning.
+- **Verified label.** A new `Scan.verifiedLabel String?` column plus
+  `Scan.verifiedBy String?`. `verifiedBy` holds `farmer` now, and later `agronomist:<userId>`.
+  A farmer confirmation is a weaker signal than an agronomist's, and keeping the source lets
+  training weight or filter them.
+
+**Farmer confirmation.** Under the result, the dashboard shows "Was this right?" with two
+buttons. `PATCH /scans/:id/verify { correct: boolean, label?: string }` sets
+`verifiedLabel` to the model's `diseaseName` when the answer is yes, and to `label` (or
+`"rejected"`) when it is no. It also sets `verifiedBy` to `farmer`. Only the scan's owner can
+call it. A scan that already has a non-farmer verification is not overwritten.
+
+**Consent.** Kenya's Data Protection Act 2019 requires telling farmers that their photos are used
+to improve the model. The SignUp page gets one sentence saying so next to the existing submit
+button. The WhatsApp welcome message adds the same sentence when that milestone ships.
 
 ## 5. Dashboard home
 
@@ -166,7 +226,10 @@ is updated to match.
 - Frontend and backend type-check and build.
 - `scripts/whatsapp-inbound-test.ts` passes unchanged.
 - `scripts/integration-test.ts` is updated to drop removed endpoints and to exercise the new
-  `POST /scans` contract, including a 403 for a farm the caller does not belong to.
+  `POST /scans` contract, including a 403 for a farm the caller does not belong to. It also
+  checks the capture: after a scan, the image file exists at the stored key, and `analysis` and
+  `model` are set. `PATCH /scans/:id/verify` sets the label for the owner and returns 403 or 404
+  for anyone else.
 - Manual: sign up, log in, see the dashboard home, run a scan and see the result appear in recent
   scans, change profile settings, create and switch farms, reload and confirm settings persisted.
 - `grep` for `firestore`, `dbAdmin`, `aiQueue`, `/crops`, `/notifications`, `/products`,
@@ -179,5 +242,11 @@ is updated to match.
   database with no production users.
 - **Hidden consumers.** A kept file may import something on the cut list. Building after each
   deletion group catches this; the plan orders deletions leaves-first.
+- **Distillation ceiling.** Until farmers or agronomists verify scans, the stored labels are
+  OpenAI's predictions, so training on them only teaches the local model to copy OpenAI.
+  Verified labels are what turn the dataset into a moat. The confirmation tap is in the MVP for
+  that reason, and its usage rate is the number to watch.
+- **Image volume loss.** If the data volume is lost, the moat is lost with it. Back up
+  `apps/backend/data` alongside the Postgres dump.
 - **Firestore-only profile fields.** If a displayed field exists only in Firestore, removing the
   read loses it. §6 requires checking each field before deleting the read.
