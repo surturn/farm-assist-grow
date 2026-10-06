@@ -47,18 +47,12 @@ const { redis } = require('@farmassist/redis');
 const sharp = require('sharp');
 const app = require('../src/app').default;
 
-const ai = require('@farmassist/ai');
+const aiClassifier = require('@farmassist/ai/classifier');
 let aiShouldFail = false;
-ai.openaiVision.diagnose = async () => {
+let nextRaw: unknown = { crop: 'Tomato', predictions: [{ label: 'Tomato___Early_Blight', score: 0.97 }] };
+aiClassifier.classifier.classify = async () => {
   if (aiShouldFail) throw new Error('stubbed OpenAI outage');
-  return {
-    analysis: {
-      diseaseName: 'Tomato Early Blight', confidence: 91, cropType: 'Tomato', severity: 'Moderate',
-      symptoms: ['concentric rings'], possibleCauses: ['fungal infection'],
-      treatment: 'stub treatment', prevention: ['rotate crops'],
-    },
-    model: 'stub:test@00000000',
-  };
+  return { raw: nextRaw, model: 'stub:test@00000000' };
 };
 
 const AUTH = { Authorization: 'Bearer stub' };
@@ -234,20 +228,40 @@ async function run(base: string) {
 
   res = await fetch(`${base}/api/v1/scans`, { method: 'POST', headers: jsonAuth, body: JSON.stringify({ imageBase64 }) });
   const created: any = await res.json();
-  check('POST /scans diagnoses server-side', res.status === 201, `status=${res.status}`);
-  check('scan stores the model output', created.scan?.analysis?.diseaseName === 'Tomato Early Blight');
-  check('scan stores the model identity', created.scan?.model === 'stub:test@00000000');
-  check('scan image is on disk under its key', !!created.scan?.imageUrl && fs.existsSync(path.join(SCAN_DIR, path.basename(created.scan.imageUrl))));
-  check('scan image is not publicly served', (await fetch(`${base}/api/v1/public/${created.scan?.imageUrl}`)).status === 404);
+  check('POST /scans diagnoses server-side', res.status === 201 && !!created.step?.scanId, `status=${res.status}`);
+  const row1 = await prisma.scan.findUnique({ where: { id: created.step.scanId } });
+  check('scan stores the model output', (row1?.analysis as any)?.raw?.crop === 'Tomato');
+  check('scan stores the model identity', row1?.model === 'stub:test@00000000');
+  check('scan image is on disk under its key', !!row1?.imageUrl && fs.existsSync(path.join(SCAN_DIR, path.basename(row1.imageUrl))));
+  check('scan image is not publicly served', (await fetch(`${base}/api/v1/public/${row1?.imageUrl}`)).status === 404);
 
   res = await fetch(`${base}/api/v1/scans`, { method: 'POST', headers: jsonAuth, body: JSON.stringify({ imageBase64, diseaseName: 'forged', confidence: 100 }) });
   const second: any = await res.json();
-  check('client-supplied diagnosis is ignored', second.scan?.diseaseName === 'Tomato Early Blight');
-  check('same image is stored once', second.scan?.imageUrl === created.scan?.imageUrl);
+  const row2 = await prisma.scan.findUnique({ where: { id: second.step.scanId } });
+  const kbName = require('@farmassist/ai/manifest').loadKnowledge()['Tomato___Early_Blight'].diseaseName;
+  check('client-supplied diagnosis is ignored', row2?.diseaseName === kbName, `got=${row2?.diseaseName}`);
+  check('same image is stored once', !!row2?.imageUrl && row2.imageUrl === row1?.imageUrl);
+
+  nextRaw = { crop: 'Unsupported', predictions: [] };
+  res = await fetch(`${base}/api/v1/scans`, { method: 'POST', headers: jsonAuth, body: JSON.stringify({ imageBase64 }) });
+  check('unsupported crop is a rejected step', (await res.json() as any).step?.reason === 'unsupported');
+  nextRaw = { crop: 'Tomato', predictions: [{ label: 'Tomato___Early_Blight', score: 0.97 }] };
+
+  res = await fetch(`${base}/api/v1/scans/${created.step.scanId}/answer`, { method: 'POST', headers: jsonAuth, body: JSON.stringify({ questionId: 'spot_start', optionId: 'lower' }) });
+  check('answering a confident scan is expired (409)', res.status === 409, `status=${res.status}`);
+
+  TOKEN_UID = 'ITEST_user_outsider';
+  res = await fetch(`${base}/api/v1/scans/${created.step.scanId}/answer`, { method: 'POST', headers: jsonAuth, body: JSON.stringify({ questionId: 'spot_start', optionId: 'lower' }) });
+  check("outsider cannot answer someone else's scan", res.status === 409, `status=${res.status}`);
+  TOKEN_UID = 'ITEST_user_scan';
+
+  const tiny = await sharp({ create: { width: 100, height: 100, channels: 3, background: '#2e7d32' } }).png().toBuffer();
+  res = await fetch(`${base}/api/v1/scans`, { method: 'POST', headers: jsonAuth, body: JSON.stringify({ imageBase64: `data:image/png;base64,${tiny.toString('base64')}` }) });
+  check('too-small photo is 400', res.status === 400, `status=${res.status}`);
 
   res = await fetch(`${base}/api/v1/dashboard`, { headers: AUTH });
   let counts: any = await res.json();
-  check('dashboard counts unverified scans as awaiting', counts.awaitingScans === 2 && counts.verifiedScans === 0,
+  check('dashboard counts unverified scans as awaiting (rejected scan excluded)', counts.awaitingScans === 2 && counts.verifiedScans === 0,
     `awaiting=${counts.awaitingScans} verified=${counts.verifiedScans}`);
 
   for (const bad of ['not-a-data-url', 'data:image/gif;base64,R0lGOD', 'data:image/png;base64,@@@@']) {
@@ -262,16 +276,16 @@ async function run(base: string) {
   check('model failure writes no scan row', (await prisma.scan.count({ where: { userId: 'ITEST_user_scan' } })) === before);
   aiShouldFail = false;
 
-  res = await fetch(`${base}/api/v1/scans/${created.scan.id}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: true }) });
+  res = await fetch(`${base}/api/v1/scans/${created.step.scanId}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: true }) });
   const verified: any = await res.json();
-  check('farmer can confirm their scan', res.status === 200 && verified.verifiedLabel === 'Tomato Early Blight' && verified.verifiedBy === 'farmer');
+  check('farmer can confirm their scan', res.status === 200 && verified.verifiedLabel === kbName && verified.verifiedBy === 'farmer');
 
-  res = await fetch(`${base}/api/v1/scans/${second.scan.id}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: false, label: 'Late blight' }) });
+  res = await fetch(`${base}/api/v1/scans/${second.step.scanId}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: false, label: 'Late blight' }) });
   check('farmer can correct their scan', (await res.json() as any).verifiedLabel === 'Late blight');
 
-  await prisma.scan.update({ where: { id: created.scan.id }, data: { verifiedLabel: 'Septoria', verifiedBy: 'agronomist:ITEST' } });
-  await fetch(`${base}/api/v1/scans/${created.scan.id}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: false, label: 'x' }) });
-  const kept = await prisma.scan.findUnique({ where: { id: created.scan.id } });
+  await prisma.scan.update({ where: { id: created.step.scanId }, data: { verifiedLabel: 'Septoria', verifiedBy: 'agronomist:ITEST' } });
+  await fetch(`${base}/api/v1/scans/${created.step.scanId}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: false, label: 'x' }) });
+  const kept = await prisma.scan.findUnique({ where: { id: created.step.scanId } });
   check('farmer cannot overwrite an agronomist label', kept?.verifiedLabel === 'Septoria');
 
   res = await fetch(`${base}/api/v1/dashboard`, { headers: AUTH });
@@ -280,7 +294,7 @@ async function run(base: string) {
     `awaiting=${counts.awaitingScans} verified=${counts.verifiedScans}`);
 
   TOKEN_UID = 'ITEST_user_outsider';
-  res = await fetch(`${base}/api/v1/scans/${second.scan.id}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: true }) });
+  res = await fetch(`${base}/api/v1/scans/${second.step.scanId}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: true }) });
   check("outsider cannot verify someone else's scan", res.status === 404, `status=${res.status}`);
 
   res = await fetch(`${base}/api/v1/crops/analyze`, { method: 'POST', headers: jsonAuth, body: '{}' });

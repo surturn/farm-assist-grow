@@ -1,6 +1,4 @@
 import { prisma } from '@farmassist/database';
-import { openaiVision, type Analysis } from '@farmassist/ai';
-import { saveScanImage } from './imageStore.service';
 import type { ScanOriginInput, ScanState, ScanWrite } from '../conversation/types';
 
 /**
@@ -28,7 +26,7 @@ export interface ScanResult {
   diseaseName?: string | null;
   confidence?: number | null;
   treatment?: string | null;
-  analysis?: Analysis | null;
+  analysis?: object | null;
   model?: string | null;
 }
 
@@ -104,30 +102,6 @@ export async function backfillChannelScansToUser(channelId: string, userId: stri
     data: { userId },
   });
   return count;
-}
-
-/**
- * The one place a diagnosis is written. Every surface (dashboard now,
- * WhatsApp and Telegram later) calls this, so every diagnosis leaves a
- * training example: the stored image, the raw model output and the model id.
- * The image is stored before the model runs, so a failed call still keeps it.
- */
-export async function diagnoseAndRecord(
-  origin: ScanOrigin,
-  input: { farmId?: string | null; bytes: Buffer; mimeType: string }
-) {
-  const imageUrl = await saveScanImage(input.bytes, input.mimeType);
-  const { analysis, model } = await openaiVision.diagnose(input.bytes, input.mimeType);
-  const scan = await createScan(origin, {
-    farmId: input.farmId ?? null,
-    imageUrl,
-    diseaseName: analysis.diseaseName,
-    confidence: analysis.confidence,
-    treatment: analysis.treatment || null,
-    analysis,
-    model,
-  });
-  return { scan, analysis };
 }
 
 /** Returns null when the scan does not exist or is not the caller's. */

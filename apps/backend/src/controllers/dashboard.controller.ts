@@ -24,7 +24,7 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
             prisma.scan.count({ where: scanFilter }),
             prisma.scan.count({ where: { ...scanFilter, verifiedLabel: { not: null } } }),
             // Unsupported-crop scans have nothing to confirm, so they never wait on the farmer.
-            prisma.scan.count({ where: { ...scanFilter, verifiedLabel: null, NOT: { diseaseName: 'Unsupported crop' } } }),
+            prisma.scan.count({ where: { ...scanFilter, verifiedLabel: null, NOT: { diseaseName: { in: ['Unsupported crop', 'Not sure', 'Not a plant', 'Unreadable photo'] } } } }),
         ]);
 
         return res.status(200).json({
