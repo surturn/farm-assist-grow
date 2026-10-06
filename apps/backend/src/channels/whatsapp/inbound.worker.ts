@@ -1,6 +1,8 @@
 import { Worker, Job } from 'bullmq';
 import { redis } from '@farmassist/redis';
 import { WHATSAPP_INBOUND_QUEUE } from './inbound.queue';
+import { handleConversation } from './conversation';
+import { WORKER_VERSION } from './version';
 import { routeIntent } from './intent.router';
 import type { InboundJob } from './types';
 import * as farmerService from '../../services/farmer.service';
@@ -20,7 +22,7 @@ import type { ChannelEventType } from '../../services/channelEvent.service';
  * intents are recorded and left, deliberately, rather than half-answered.
  */
 
-export const WORKER_VERSION = 'inbound@1';
+export { WORKER_VERSION };
 
 /** Exported for tests: the whole job body, minus the queue plumbing. */
 export async function handleInboundJob(job: InboundJob): Promise<void> {
@@ -79,9 +81,7 @@ async function handleMessage(job: InboundJob): Promise<void> {
       return;
 
     default:
-      // Diagnosis, farm logging and replies arrive in later milestones. The
-      // event above is already recorded, so nothing is lost in the meantime.
-      console.log(`[whatsapp] ${intent.kind} from channel ${channel.id} recorded, no handler yet`);
+      await handleConversation(channel, intent, message.id);
       return;
   }
 }

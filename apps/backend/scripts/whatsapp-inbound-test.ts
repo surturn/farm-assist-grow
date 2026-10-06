@@ -42,6 +42,18 @@ const { routeIntent } = require('../src/channels/whatsapp/intent.router');
 const { handleInboundJob } = require('../src/channels/whatsapp/inbound.worker');
 const { inboundQueue } = require('../src/channels/whatsapp/inbound.queue');
 const farmerService = require('../src/services/farmer.service');
+const sharp = require('sharp');
+const { graph } = require('../src/channels/whatsapp/graph');
+const ai = require('@farmassist/ai/classifier');
+const sent: any[] = [];
+graph.post = async (_path: string, body: any) => { sent.push(body); return { messages: [{ id: `wamid.out.${sent.length}` }] }; };
+graph.getJson = async (path: string) => path.includes('too-big')
+  ? { url: 'https://media/x', mime_type: 'image/jpeg', file_size: 20 * 1024 * 1024 }
+  : { url: 'https://media/x', mime_type: 'image/jpeg', file_size: 1000 };
+let leafBytes: Buffer = Buffer.from('not-an-image');
+graph.getBytes = async () => leafBytes;
+let nextRaw: unknown = null;
+ai.classifier.classify = async () => ({ raw: nextRaw, model: 'stub@1' });
 
 let passed = 0;
 let failed = 0;
@@ -61,7 +73,7 @@ const PHONE_STOP = '254700000902';
 const PHONE_IDEMPOTENT = '254700000903';
 const PHONE_IMAGE = '254700000904';
 const PHONE_BURSTS = ['254700000905', '254700000906', '254700000907'];
-const PHONES = [PHONE_TEXT, PHONE_STOP, PHONE_IDEMPOTENT, PHONE_IMAGE, ...PHONE_BURSTS];
+const PHONES = [PHONE_TEXT, PHONE_STOP, PHONE_IDEMPOTENT, PHONE_IMAGE, ...PHONE_BURSTS, '254700000910', '254700000911'];
 const JOB_IDS: string[] = [];
 
 function messagePayload(from: string, id: string, message: Record<string, unknown>) {
@@ -103,6 +115,8 @@ async function post(base: string, payload: unknown, signature?: string) {
 }
 
 async function cleanup() {
+  const chans = await prisma.farmerChannel.findMany({ where: { phone: { in: PHONES.map((p) => `+${p}`) } }, select: { id: true } });
+  await prisma.scan.deleteMany({ where: { channelId: { in: chans.map((c: { id: string }) => c.id) } } });
   await prisma.farmerChannel.deleteMany({
     where: { phone: { in: PHONES.map((p) => `+${p}`) } },
   });
@@ -187,7 +201,7 @@ async function run(base: string) {
   check('lastInboundAt is set, opening the service window', !!channel?.lastInboundAt);
   check('a new channel is not opted out', channel?.optedOut === false);
 
-  const events = await prisma.channelEvent.findMany({ where: { channelId: channel.id } });
+  const events = await prisma.channelEvent.findMany({ where: { channelId: channel.id, direction: 'INBOUND' } });
   check('one ChannelEvent recorded', events.length === 1, `count=${events.length}`);
   check('event is inbound text', events[0]?.direction === 'INBOUND' && events[0]?.type === 'message.text');
   check('event carries the Meta message id', events[0]?.waMessageId === 'wamid.TEST_TEXT_1');
@@ -202,7 +216,7 @@ async function run(base: string) {
   await handleInboundJob(dupe);
   await handleInboundJob(dupe);
   const dupeChannel = await prisma.farmerChannel.findUnique({ where: { phone: `+${PHONE_IDEMPOTENT}` } });
-  const dupeEvents = await prisma.channelEvent.count({ where: { channelId: dupeChannel.id } });
+  const dupeEvents = await prisma.channelEvent.count({ where: { channelId: dupeChannel.id, direction: 'INBOUND' } });
   check('a replayed message produces exactly one event', dupeEvents === 1, `count=${dupeEvents}`);
 
   // --- Opt-out, and the consent rule that an unrelated message must not undo it
@@ -284,6 +298,60 @@ async function run(base: string) {
   });
   const invented = await prisma.farmerChannel.findUnique({ where: { phone: '+254700000999' } });
   check('a status for an unknown number creates no channel', invented === null);
+  leafBytes = await sharp({ create: { width: 400, height: 300, channels: 3, background: '#2e7d32' } }).jpeg().toBuffer();
+  const job = (from: string, id: string, message: Record<string, unknown>) =>
+    ({ kind: 'message', phoneNumberId: 'test', receivedAt: new Date().toISOString(), message: { from, id, timestamp: '1', ...message } });
+
+  // Confident photo → one text reply with KB name.
+  nextRaw = { crop: 'Tomato', predictions: [{ label: 'Tomato___Late_Blight', score: 0.97 }] };
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.conv.1', { type: 'image', image: { id: 'media-1', mime_type: 'image/jpeg' } }) as any);
+  check('photo gets one reply', sent.length === 1 && sent[0].type === 'text', JSON.stringify(sent));
+  const conf = await prisma.scan.findFirst({ where: { waMessageId: 'wamid.conv.1' } });
+  check('WhatsApp scan captured with channel and model', !!conf?.channelId && conf?.model === 'stub@1' && !!conf?.imageUrl);
+
+  // Replayed image delivery → no extra send.
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.conv.1', { type: 'image', image: { id: 'media-1', mime_type: 'image/jpeg' } }) as any);
+  check('replayed image message sends no extra reply', sent.length === 0, JSON.stringify(sent));
+
+  // Close call → question buttons; tap → resolution.
+  const questions = require('@farmassist/ai/questions');
+  const pairs = questions.loadQuestions();
+  const sourced = pairs.some((p: any) => p.source);
+  if (sourced) {
+    nextRaw = { crop: 'Tomato', predictions: [{ label: 'Tomato___Early_Blight', score: 0.55 }, { label: 'Tomato___Late_Blight', score: 0.4 }] };
+    sent.length = 0;
+    await handleInboundJob(job('254700000910', 'wamid.conv.2', { type: 'image', image: { id: 'media-2', mime_type: 'image/jpeg' } }) as any);
+    check('close call sends buttons', sent[0]?.type === 'interactive', JSON.stringify(sent[0]));
+    const btn = sent[0].interactive.action.buttons[0].reply;
+    sent.length = 0;
+    await handleInboundJob(job('254700000910', 'wamid.conv.3', { type: 'interactive', interactive: { type: 'button_reply', button_reply: btn } }) as any);
+    check('button tap gets a reply', sent.length === 1);
+    sent.length = 0;
+    await handleInboundJob(job('254700000910', 'wamid.conv.4', { type: 'interactive', interactive: { type: 'button_reply', button_reply: btn } }) as any);
+    check('replayed button tap is told the question expired', /expired|limepitwa/.test(JSON.stringify(sent)));
+  }
+
+  // Oversized media → unreadable reply, no classifier call.
+  let classified = false;
+  const realClassify = ai.classifier.classify;
+  ai.classifier.classify = async () => { classified = true; return realClassify(); };
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.conv.5', { type: 'image', image: { id: 'too-big', mime_type: 'image/jpeg' } }) as any);
+  check('oversized photo is refused without a model call', !classified && /photo|picha/.test(JSON.stringify(sent)));
+  ai.classifier.classify = async () => ({ raw: nextRaw, model: 'stub@1' });
+
+  // Text → help.
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.conv.6', { type: 'text', text: { body: 'habari' } }) as any);
+  check('free text gets the help reply', /leaf|jani/.test(JSON.stringify(sent)));
+
+  // Opted out → silence.
+  await handleInboundJob(job('254700000911', 'wamid.conv.7', { type: 'text', text: { body: 'STOP' } }) as any);
+  sent.length = 0;
+  await handleInboundJob(job('254700000911', 'wamid.conv.8', { type: 'image', image: { id: 'media-3', mime_type: 'image/jpeg' } }) as any);
+  check('opted-out farmer gets no reply', sent.length === 0);
 }
 
 const server = app.listen(0, async () => {
