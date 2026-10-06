@@ -98,6 +98,11 @@ model Scan {
   verifiedLabel String?
   verifiedBy    String?
 
+  // Conversation state and audit trail (diagnosis pipeline). answers holds
+  // [{questionId, optionId}] in the order asked; trace holds the tool steps.
+  answers       Json?
+  trace         Json?
+
   user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   farm          Farm?          @relation(fields: [farmId], references: [id], onDelete: SetNull)
   channel       FarmerChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
