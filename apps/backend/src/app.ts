@@ -38,14 +38,7 @@ import farmRoutes from './routes/farm.routes';
 import cropRoutes from './routes/crop.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import scanRoutes from './routes/scan.routes';
-import notificationRoutes from './routes/notification.routes';
-import productRoutes from './routes/product.routes';
-import diseaseRoutes from './routes/disease.routes';
-import iotRoutes from './routes/iot.routes';
 import userRoutes from './routes/user.routes';
-import taskRoutes from './routes/task.routes';
-import farmnoteRoutes from './routes/farmnote.routes';
-import agrovetRoutes from './routes/agrovet.routes';
 import whatsappWebhookRoutes from './channels/whatsapp/webhook.route';
 import path from 'path';
 
@@ -55,14 +48,7 @@ app.use('/api/v1/farms', farmRoutes);
 app.use('/api/v1/crops', cropRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/scans', scanRoutes);
-app.use('/api/v1/notifications', notificationRoutes);
-app.use('/api/v1/products', productRoutes);
-app.use('/api/v1/diseases', diseaseRoutes);
-app.use('/api/v1/iot', iotRoutes);
 app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/tasks', taskRoutes);
-app.use('/api/v1/farm-notes', farmnoteRoutes);
-app.use('/api/v1/agrovets', agrovetRoutes);
 
 // Unauthenticated by design: the caller is Meta, not a logged-in user. The
 // HMAC signature check inside the route is what authenticates it.

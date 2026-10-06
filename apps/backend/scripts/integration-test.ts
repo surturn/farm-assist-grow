@@ -53,7 +53,6 @@ const UIDS = [
   'ITEST_user_avatar',
   'ITEST_user_outsider',
 ];
-const SEED_TENANT = 'ITEST_agrovet_tenant';
 const AVATARS_DIR = path.join(__dirname, '../public/avatars');
 
 let passed = 0;
@@ -74,7 +73,6 @@ async function cleanup() {
   const memberships = await prisma.tenantUser.findMany({ where: { userId: { in: UIDS } } });
   const tenantIds = [...new Set(memberships.map((m: { tenantId: string }) => m.tenantId))] as string[];
   if (tenantIds.length) await prisma.tenant.deleteMany({ where: { id: { in: tenantIds } } });
-  await prisma.tenant.deleteMany({ where: { name: SEED_TENANT } });
   await prisma.user.deleteMany({ where: { id: { in: UIDS } } });
   for (const uid of UIDS) {
     const f = path.join(AVATARS_DIR, `${uid}.webp`);
@@ -87,7 +85,7 @@ async function run(base: string) {
 
   // --- First login provisions a user, tenant, membership and farm together.
   TOKEN_UID = 'ITEST_user_provisioning';
-  let res = await fetch(`${base}/api/v1/agrovets`, { headers: AUTH });
+  let res = await fetch(`${base}/api/v1/dashboard`, { headers: AUTH });
   check('first login is authenticated', res.status === 200, `status=${res.status}`);
 
   const user = await prisma.user.findUnique({ where: { id: TOKEN_UID } });
@@ -104,7 +102,7 @@ async function run(base: string) {
   // must treat the loser as a success rather than a 500.
   TOKEN_UID = 'ITEST_user_race';
   const raced = await Promise.all(
-    Array.from({ length: 5 }, () => fetch(`${base}/api/v1/agrovets`, { headers: AUTH }))
+    Array.from({ length: 5 }, () => fetch(`${base}/api/v1/dashboard`, { headers: AUTH }))
   );
   const statuses = raced.map((r) => r.status);
   check('all concurrent first logins succeed', statuses.every((s) => s === 200), `statuses=${statuses}`);
@@ -114,56 +112,24 @@ async function run(base: string) {
     (await prisma.tenantUser.count({ where: { userId: TOKEN_UID } })) === 1
   );
 
-  // --- Agrovet routes return real rows.
-  const tenant = await prisma.tenant.create({
-    data: {
-      name: SEED_TENANT,
-      type: 'AGROVET',
-      agrovets: {
-        create: {
-          name: 'ITEST Agrovet',
-          location: 'Nakuru',
-          contactNumber: '+254711000111',
-          products: {
-            create: [
-              { name: 'ITEST NPK 17-17-17', price: 3500, category: 'FERTILIZER' },
-              { name: 'ITEST Maize Seed', price: 500, category: 'SEED' },
-            ],
-          },
-        },
-      },
-    },
-    include: { agrovets: true },
-  });
+  // --- Dashboard returns only the core fields.
+  res = await fetch(`${base}/api/v1/dashboard`, { headers: AUTH });
+  const dash: any = await res.json();
+  check('GET /dashboard returns 200', res.status === 200, `status=${res.status}`);
+  check('dashboard lists the default farm', Array.isArray(dash.farms) && dash.farms.length === 1);
+  check('dashboard has no removed fields', !('alerts' in dash) && !('news' in dash) && !('stats' in dash));
 
-  res = await fetch(`${base}/api/v1/agrovets`, { headers: AUTH });
-  const list = await res.json();
-  const seeded = Array.isArray(list) ? list.find((a: any) => a.id === tenant.agrovets[0].id) : null;
-  check('GET /agrovets returns 200', res.status === 200, `status=${res.status}`);
-  check('GET /agrovets includes the seeded agrovet', !!seeded);
-  check('GET /agrovets includes its products', seeded?.products?.length === 2, `count=${seeded?.products?.length}`);
-  // The dashboard renders these two; before they existed it showed "undefined".
-  check('agrovet exposes contactNumber', seeded?.contactNumber === '+254711000111', `got=${seeded?.contactNumber}`);
-  check('agrovet rating is null rather than a made-up default', seeded?.rating === null, `got=${seeded?.rating}`);
+  res = await fetch(`${base}/api/v1/dashboard`);
+  check('dashboard rejects an unauthenticated caller', res.status === 401, `status=${res.status}`);
 
-  res = await fetch(`${base}/api/v1/agrovets/products/search?query=npk`, { headers: AUTH });
-  const found = await res.json();
-  check('product search returns 200', res.status === 200, `status=${res.status}`);
-  check(
-    'product search matches case-insensitively',
-    Array.isArray(found) && found.some((p: any) => p.name === 'ITEST NPK 17-17-17')
-  );
-  check('product search embeds the agrovet', found?.[0]?.agrovet?.name !== undefined);
-
-  res = await fetch(`${base}/api/v1/agrovets/products/search`, { headers: AUTH });
-  check('product search without a query is 400', res.status === 400, `status=${res.status}`);
-
-  res = await fetch(`${base}/api/v1/agrovets`);
-  check('agrovet routes reject an unauthenticated caller', res.status === 401, `status=${res.status}`);
+  for (const gone of ['agrovets', 'tasks', 'farm-notes', 'notifications', 'products', 'diseases', 'iot/telemetry']) {
+    res = await fetch(`${base}/api/v1/${gone}`, { headers: AUTH });
+    check(`/${gone} is gone`, res.status === 404, `status=${res.status}`);
+  }
 
   // --- Avatar upload writes under the verified uid, ignoring the request body.
   TOKEN_UID = 'ITEST_user_avatar';
-  await fetch(`${base}/api/v1/agrovets`, { headers: AUTH }); // provision the user
+  await fetch(`${base}/api/v1/dashboard`, { headers: AUTH }); // provision the user
   const png = await sharp({
     create: { width: 64, height: 64, channels: 3, background: { r: 20, g: 120, b: 40 } },
   })
@@ -201,23 +167,9 @@ async function run(base: string) {
   });
 
   TOKEN_UID = 'ITEST_user_outsider';
-  await fetch(`${base}/api/v1/agrovets`, { headers: AUTH }); // provision the outsider
+  await fetch(`${base}/api/v1/dashboard`, { headers: AUTH }); // provision the outsider
 
   const asOutsider = { ...AUTH, 'Content-Type': 'application/json' };
-
-  res = await fetch(`${base}/api/v1/tasks`, {
-    method: 'POST',
-    headers: asOutsider,
-    body: JSON.stringify({ title: 'ITEST intrusion', farmId: victimFarm.id }),
-  });
-  check("outsider cannot create a task on someone else's farm", res.status === 403, `status=${res.status}`);
-
-  res = await fetch(`${base}/api/v1/farm-notes`, {
-    method: 'POST',
-    headers: asOutsider,
-    body: JSON.stringify({ note: 'ITEST intrusion', farmId: victimFarm.id }),
-  });
-  check("outsider cannot write a farm note on someone else's farm", res.status === 403, `status=${res.status}`);
 
   res = await fetch(`${base}/api/v1/scans`, {
     method: 'POST',
@@ -226,17 +178,8 @@ async function run(base: string) {
   });
   check("outsider cannot attach a scan to someone else's farm", res.status === 403, `status=${res.status}`);
 
-  const intruded = await prisma.task.count({ where: { farmId: victimFarm.id, assignedTo: 'ITEST_user_outsider' } });
+  const intruded = await prisma.scan.count({ where: { farmId: victimFarm.id, userId: 'ITEST_user_outsider' } });
   check('no intruding row reached the database', intruded === 0, `count=${intruded}`);
-
-  // The owner must still be able to use their own farm.
-  TOKEN_UID = 'ITEST_user_provisioning';
-  res = await fetch(`${base}/api/v1/tasks`, {
-    method: 'POST',
-    headers: { ...AUTH, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: 'ITEST owner task', farmId: victimFarm.id }),
-  });
-  check('the farm owner can still create a task on it', res.status === 201, `status=${res.status}`);
 }
 
 const server = app.listen(0, async () => {
