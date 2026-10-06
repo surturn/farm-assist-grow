@@ -47,6 +47,7 @@ services:
       - "5000:5000"
     volumes:
       - ./apps/backend/public/avatars:/app/apps/backend/public/avatars
+      - ./apps/backend/data:/app/apps/backend/data
     depends_on:
       postgres:
         condition: service_healthy

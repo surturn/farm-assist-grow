@@ -35,7 +35,6 @@ app.get('/health', (req: Request, res: Response) => {
  * Import and Use Routes
  */
 import farmRoutes from './routes/farm.routes';
-import cropRoutes from './routes/crop.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import scanRoutes from './routes/scan.routes';
 import userRoutes from './routes/user.routes';
@@ -45,7 +44,6 @@ import path from 'path';
 app.use('/api/v1/public', express.static(path.join(__dirname, '../public')));
 
 app.use('/api/v1/farms', farmRoutes);
-app.use('/api/v1/crops', cropRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/scans', scanRoutes);
 app.use('/api/v1/users', userRoutes);
