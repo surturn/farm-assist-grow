@@ -18,8 +18,6 @@ model User {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   tenantMemberships TenantUser[]
-  tasks             Task[]
-  notifications     Notification[]
   scans             Scan[]
   farmNotes         FarmNote[]
   channel           FarmerChannel?
@@ -46,7 +44,6 @@ model Tenant {
   updatedAt   DateTime     @updatedAt
   members     TenantUser[]
   farms       Farm[]
-  agrovets    Agrovet[]
 }
 
 model TenantUser {
@@ -69,48 +66,8 @@ model Farm {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  crops       Crop[]
-  tasks       Task[]
   scans       Scan[]
   notes       FarmNote[]
-}
-
-model Crop {
-  id              String    @id @default(uuid())
-  farmId          String
-  name            String
-  type            String
-  plantedAt       DateTime?
-  expectedHarvest DateTime?
-  status          String    @default("GROWING") // GROWING, HARVESTED, DISEASED
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  farm            Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
-}
-
-model Task {
-  id          String    @id @default(uuid())
-  farmId      String?
-  title       String
-  description String?
-  status      String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
-  assignedTo  String?
-  dueDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  farm        Farm?     @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  assignee    User?     @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  title     String?
-  message   String
-  type      String   @default("INFO") // ALERT, INFO
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Scan {
@@ -132,6 +89,14 @@ model Scan {
   mediaId       String?
   workerVersion String?
   reviewStatus  String?  // null for API scans; PENDING/CLEARED/ESCALATED from the channel
+
+  // Training-example capture (strip-to-core spec §4.1). Every diagnosis
+  // writes analysis and model; the verified label arrives later from the
+  // farmer ("farmer") or an agronomist ("agronomist:<userId>").
+  analysis      Json?
+  model         String?
+  verifiedLabel String?
+  verifiedBy    String?
 
   user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   farm          Farm?          @relation(fields: [farmId], references: [id], onDelete: SetNull)
@@ -162,38 +127,6 @@ model FarmNote {
   channel     FarmerChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
 
   @@index([channelId, createdAt])
-}
-
-model Agrovet {
-  id          String   @id @default(uuid())
-  tenantId    String   @unique
-  name          String
-  location      String
-  // E.164. The dashboard offers a "Contact Agrovet" action, and a
-  // low-confidence diagnosis routes the farmer to a real person here.
-  contactNumber String?
-  // Null until a review mechanism exists. Callers must treat null as "no
-  // rating" and show nothing — never substitute a default.
-  rating        Float?
-  // Unused in v1. Ships now so the v1.1 geospatial agrovet matching needs no
-  // migration; v1 routes low-confidence scans by county-level region instead.
-  latitude      Float?
-  longitude     Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  products    Product[]
-}
-
-model Product {
-  id          String   @id @default(uuid())
-  agrovetId   String
-  name        String
-  description String?
-  price       Float
-  category    String   // SEED, FERTILIZER, PESTICIDE
-  inStock     Boolean  @default(true)
-  agrovet     Agrovet  @relation(fields: [agrovetId], references: [id], onDelete: Cascade)
 }
 
 /// A WhatsApp correspondent, keyed on their phone number rather than on an
@@ -259,11 +192,3 @@ model ChannelEvent {
   @@index([waMessageId])
 }
 
-model NewsItem {
-  id          String   @id @default(uuid())
-  title       String
-  content     String
-  source      String?
-  category    String?  // SUBSIDY, ALERT, TENDER, GENERAL
-  publishedAt DateTime @default(now())
-}
