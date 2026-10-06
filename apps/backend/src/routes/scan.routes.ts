@@ -6,7 +6,7 @@ import { rateLimiter } from '../middleware/rateLimiter.middleware';
 const router = Router();
 
 router.get('/', requireAuth, getScans);
-// Each POST is a paid model call; same budget /crops/analyze had.
+// Each POST is a paid model call: 20 per user per hour.
 router.post('/', requireAuth, rateLimiter({ windowSeconds: 3600, maxRequests: 20 }), createScan);
 router.patch('/:id/verify', requireAuth, verifyScan);
 
