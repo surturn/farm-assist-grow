@@ -6,7 +6,12 @@ const REGION_COORDINATES: Record<string, { lat: number; lon: number }> = {
     "Eastern Kenya": { lat: -1.5348, lon: 37.2615 }, // Machakos
     "Coast": { lat: -4.0435, lon: 39.6682 },        // Mombasa
     "Nairobi": { lat: -1.2921, lon: 36.8219 },      // Nairobi
+    "Nyanza": { lat: -0.0917, lon: 34.7680 },       // Kisumu
+    "North Eastern": { lat: -0.4532, lon: 39.6461 }, // Garissa
 };
+
+/** The regions a farmer can pick. Every one has weather coordinates. */
+export const KENYA_REGIONS = Object.keys(REGION_COORDINATES);
 
 export const getCoordinates = (region: string) => {
     return REGION_COORDINATES[region] || REGION_COORDINATES["Central Kenya"]; // Default fallback

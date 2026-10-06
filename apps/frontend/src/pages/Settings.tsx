@@ -13,11 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useFarm } from "@/contexts/FarmContext";
 import { apiClient } from "@/api/client";
+import { KENYA_REGIONS } from "@/lib/weather";
 
-const KENYA_REGIONS = [
-  "Central Kenya", "Rift Valley", "Western Kenya",
-  "Eastern Kenya", "Coast", "Nairobi", "Nyanza", "North Eastern",
-];
 const LANGUAGES = [{ value: "en", label: "English" }, { value: "sw", label: "Kiswahili" }];
 
 export default function Settings() {
