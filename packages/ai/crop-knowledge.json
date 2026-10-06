@@ -7,19 +7,28 @@
       "Dark, sunken, dry patches on berries, which may ripen early",
       "Leaves drop early when many spots are present"
     ],
-    "possibleCauses": ["fungal infection", "plants weakened by low nitrogen", "full sun and drought stress"],
+    "possibleCauses": [
+      "fungal infection",
+      "plants weakened by low nitrogen",
+      "full sun and drought stress"
+    ],
     "treatment": "Improve plant nutrition, especially nitrogen, and reduce water stress. Copper-based fungicides help protect new growth. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Balanced fertiliser and mulching",
       "Moderate shade where suitable",
       "Remove and destroy heavily spotted leaves and berries"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Coffee___Healthy": {
     "diseaseName": "Healthy",
     "cropType": "Coffee",
-    "symptoms": ["No visible signs of disease or pest damage"],
+    "symptoms": [
+      "No visible signs of disease or pest damage"
+    ],
     "possibleCauses": [],
     "treatment": "No treatment needed. Keep monitoring, especially during the rains.",
     "prevention": [
@@ -27,7 +36,10 @@
       "Prune for good air flow",
       "Keep nutrition balanced"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Coffee___Leaf_Miner": {
     "diseaseName": "Coffee leaf miner (Leucoptera species)",
@@ -37,14 +49,21 @@
       "The dried skin of the mine peels off, with small larvae inside",
       "Heavy attack causes leaves to fall"
     ],
-    "possibleCauses": ["pest damage: moth larvae feeding inside the leaf", "dry weather", "natural enemies killed by broad-spectrum sprays"],
+    "possibleCauses": [
+      "pest damage: moth larvae feeding inside the leaf",
+      "dry weather",
+      "natural enemies killed by broad-spectrum sprays"
+    ],
     "treatment": "Count active mines before spraying; many attacks are controlled by natural parasites. If damage is heavy, use an insecticide recommended by your extension officer and avoid broad-spectrum products. Ask your agrovet for the product and rate registered in Kenya.",
     "prevention": [
       "Protect natural enemies by avoiding unnecessary sprays",
       "Keep some shade and ground cover",
       "Monitor regularly in dry spells"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Coffee___Phoma": {
     "diseaseName": "Phoma leaf blight / dieback (Phoma species)",
@@ -54,14 +73,21 @@
       "Young leaves and shoot tips turn black and die back",
       "Worse after cold, wet and windy weather"
     ],
-    "possibleCauses": ["fungal infection", "cold wet weather at high altitude", "wounds from wind or hail"],
+    "possibleCauses": [
+      "fungal infection",
+      "cold wet weather at high altitude",
+      "wounds from wind or hail"
+    ],
     "treatment": "Prune out and destroy dead shoot tips. Copper-based fungicides protect new growth during cold wet periods. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Plant windbreaks on exposed slopes",
       "Protect new flushes during cold wet seasons",
       "Keep trees well nourished"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Coffee___Rust": {
     "diseaseName": "Coffee leaf rust (Hemileia vastatrix)",
@@ -71,14 +97,21 @@
       "Pale yellow patches on the upper side above the powder",
       "Leaves fall early and branches may die back"
     ],
-    "possibleCauses": ["fungal infection spread by wind and rain splash", "warm humid weather", "susceptible varieties"],
+    "possibleCauses": [
+      "fungal infection spread by wind and rain splash",
+      "warm humid weather",
+      "susceptible varieties"
+    ],
     "treatment": "Copper-based fungicides protect leaves; systemic fungicides may be recommended where rust is severe. Timing matters, so follow your extension officer's spray calendar. Ask your agrovet for the product and rate registered in Kenya.",
     "prevention": [
       "Plant rust-resistant varieties such as Ruiru Eleven or Batian",
       "Prune and space trees for air flow",
       "Remove fallen infected leaves"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Bacterial_Spot": {
     "diseaseName": "Bacterial spot (Xanthomonas species)",
@@ -88,14 +121,21 @@
       "Spots join up and leaves turn yellow and dry",
       "Small raised scabby spots on green fruit"
     ],
-    "possibleCauses": ["bacterial infection", "infected seed or seedlings", "rain splash and overhead irrigation"],
+    "possibleCauses": [
+      "bacterial infection",
+      "infected seed or seedlings",
+      "rain splash and overhead irrigation"
+    ],
     "treatment": "There is no cure. Remove badly infected plants. Copper-based bactericides can slow the spread. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Use certified disease-free seed and seedlings",
       "Rotate away from tomato, pepper and potato",
       "Avoid overhead watering and do not work among wet plants"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Early_Blight": {
     "diseaseName": "Early blight (Alternaria solani)",
@@ -105,19 +145,28 @@
       "Yellowing around the spots; leaves dry and fall",
       "Dark sunken patches on stems and near the fruit stalk"
     ],
-    "possibleCauses": ["fungal infection", "warm weather with dew or rain", "plants stressed by poor nutrition"],
+    "possibleCauses": [
+      "fungal infection",
+      "warm weather with dew or rain",
+      "plants stressed by poor nutrition"
+    ],
     "treatment": "Remove infected lower leaves. Protectant fungicides such as mancozeb or chlorothalonil, or a recommended systemic, slow the disease. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Rotate crops and remove old crop debris",
       "Mulch to stop soil splashing onto leaves",
       "Stake plants and keep good spacing"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Healthy": {
     "diseaseName": "Healthy",
     "cropType": "Tomato",
-    "symptoms": ["No visible signs of disease or pest damage"],
+    "symptoms": [
+      "No visible signs of disease or pest damage"
+    ],
     "possibleCauses": [],
     "treatment": "No treatment needed. Keep monitoring, especially in wet weather.",
     "prevention": [
@@ -125,7 +174,10 @@
       "Remove weeds that host pests",
       "Water at the base, not over the leaves"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Late_Blight": {
     "diseaseName": "Late blight (Phytophthora infestans)",
@@ -135,14 +187,21 @@
       "White fuzzy growth under the leaves in wet weather",
       "Firm brown patches on fruit; whole plants can collapse within days"
     ],
-    "possibleCauses": ["water mould infection", "cool wet weather", "nearby infected tomato or potato crops"],
+    "possibleCauses": [
+      "water mould infection",
+      "cool wet weather",
+      "nearby infected tomato or potato crops"
+    ],
     "treatment": "Act quickly: remove and destroy infected plants away from the field. Fungicides with metalaxyl or cymoxanil, alongside a protectant such as mancozeb, are commonly recommended. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Do not plant tomato next to potato",
       "Use tolerant varieties and wide spacing",
       "Start protective sprays before long rains as advised by extension"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Leaf_Mold": {
     "diseaseName": "Leaf mould (Passalora fulva)",
@@ -152,14 +211,20 @@
       "Olive-green to brown velvety mould under the leaves",
       "Mostly in greenhouses and very humid conditions"
     ],
-    "possibleCauses": ["fungal infection", "high humidity and poor air flow"],
+    "possibleCauses": [
+      "fungal infection",
+      "high humidity and poor air flow"
+    ],
     "treatment": "Lower humidity by opening vents and spacing plants. Remove infected leaves. Fungicides may be needed if it spreads. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Ventilate greenhouses well",
       "Prune lower leaves for air flow",
       "Choose resistant varieties"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Mosaic_Virus": {
     "diseaseName": "Tomato mosaic virus (ToMV)",
@@ -169,14 +234,20 @@
       "Leaves twisted, narrow or fern-like",
       "Stunted plants with fewer, uneven fruit"
     ],
-    "possibleCauses": ["virus spread by hands, tools and infected seed", "handling tobacco before touching plants"],
+    "possibleCauses": [
+      "virus spread by hands, tools and infected seed",
+      "handling tobacco before touching plants"
+    ],
     "treatment": "There is no cure. Uproot and destroy infected plants early. Wash hands and disinfect tools before handling healthy plants.",
     "prevention": [
       "Use certified seed and resistant varieties",
       "Do not smoke or handle tobacco near the crop",
       "Disinfect tools and stakes between seasons"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Septoria_Leaf_Spot": {
     "diseaseName": "Septoria leaf spot (Septoria lycopersici)",
@@ -186,14 +257,21 @@
       "Tiny black dots inside the spots; unlike early blight there are no target rings",
       "Starts on lower leaves, which yellow and fall"
     ],
-    "possibleCauses": ["fungal infection", "warm wet weather and rain splash", "infected crop debris"],
+    "possibleCauses": [
+      "fungal infection",
+      "warm wet weather and rain splash",
+      "infected crop debris"
+    ],
     "treatment": "Remove infected lower leaves. Protectant fungicides such as mancozeb or chlorothalonil slow the spread. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Rotate crops and clear old plants",
       "Mulch and water at the base",
       "Control weeds such as nightshade that carry the fungus"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Target_Spot": {
     "diseaseName": "Target spot (Corynespora cassiicola)",
@@ -203,14 +281,21 @@
       "Spots can merge and dry large parts of the leaf",
       "Small sunken brown spots on fruit"
     ],
-    "possibleCauses": ["fungal infection", "warm humid weather", "dense canopy"],
+    "possibleCauses": [
+      "fungal infection",
+      "warm humid weather",
+      "dense canopy"
+    ],
     "treatment": "Remove infected leaves and improve air flow. Fungicides may be needed. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Prune and stake for air flow",
       "Rotate crops",
       "Remove crop debris after harvest"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Tomato___Yellow_Leaf_Curl_Virus": {
     "diseaseName": "Tomato yellow leaf curl virus (TYLCV)",
@@ -220,14 +305,19 @@
       "Young leaves small and crumpled",
       "Stunted plants; flowers drop and few fruit form"
     ],
-    "possibleCauses": ["virus spread by whiteflies"],
+    "possibleCauses": [
+      "virus spread by whiteflies"
+    ],
     "treatment": "There is no cure. Uproot infected plants early. Control whiteflies with yellow sticky traps and an insecticide recommended by your extension officer. Ask your agrovet for the product and rate registered in Kenya.",
     "prevention": [
       "Raise seedlings under insect-proof net",
       "Use tolerant varieties",
       "Remove weeds that host whiteflies"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Pepper___Anthracnose": {
     "diseaseName": "Anthracnose (Colletotrichum species)",
@@ -237,14 +327,21 @@
       "Small irregular brown spots on leaves",
       "Fruit rots, especially when ripening"
     ],
-    "possibleCauses": ["fungal infection", "warm wet weather", "infected seed and crop debris"],
+    "possibleCauses": [
+      "fungal infection",
+      "warm wet weather",
+      "infected seed and crop debris"
+    ],
     "treatment": "Pick and destroy infected fruit. Fungicides can protect healthy fruit. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Use clean seed",
       "Rotate crops and remove debris",
       "Harvest promptly and avoid wounding fruit"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Pepper___Bacterial_Spot": {
     "diseaseName": "Bacterial spot (Xanthomonas species)",
@@ -254,19 +351,28 @@
       "Leaves yellow and drop",
       "Raised scabby spots on fruit"
     ],
-    "possibleCauses": ["bacterial infection", "infected seed", "rain splash"],
+    "possibleCauses": [
+      "bacterial infection",
+      "infected seed",
+      "rain splash"
+    ],
     "treatment": "There is no cure. Remove infected plants. Copper-based bactericides can slow the spread. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Use certified seed and seedlings",
       "Rotate away from pepper and tomato",
       "Avoid overhead watering"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Pepper___Healthy": {
     "diseaseName": "Healthy",
     "cropType": "Pepper",
-    "symptoms": ["No visible signs of disease or pest damage"],
+    "symptoms": [
+      "No visible signs of disease or pest damage"
+    ],
     "possibleCauses": [],
     "treatment": "No treatment needed. Keep monitoring.",
     "prevention": [
@@ -274,7 +380,10 @@
       "Water at the base",
       "Remove weeds around the crop"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Pepper___Mosaic_Virus": {
     "diseaseName": "Mosaic virus (e.g. CMV, PVY)",
@@ -284,14 +393,20 @@
       "Leaves narrow, distorted or wrinkled",
       "Stunted plants and misshapen fruit"
     ],
-    "possibleCauses": ["virus spread by aphids", "virus spread by hands and tools"],
+    "possibleCauses": [
+      "virus spread by aphids",
+      "virus spread by hands and tools"
+    ],
     "treatment": "There is no cure. Remove and destroy infected plants. Control aphids with a method recommended by your extension officer.",
     "prevention": [
       "Use tolerant varieties and clean seedlings",
       "Control aphids early",
       "Remove weeds that host the virus"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Bean___Angular_Leaf_Spot": {
     "diseaseName": "Angular leaf spot (Pseudocercospora griseola)",
@@ -301,14 +416,21 @@
       "Grey fuzzy growth under the spots in humid weather",
       "Reddish-brown spots on pods"
     ],
-    "possibleCauses": ["fungal infection", "infected seed", "humid weather"],
+    "possibleCauses": [
+      "fungal infection",
+      "infected seed",
+      "humid weather"
+    ],
     "treatment": "Remove badly infected plants. Fungicides may help in wet seasons. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Plant certified clean seed",
       "Rotate with non-legume crops",
       "Use tolerant varieties"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Bean___Anthracnose": {
     "diseaseName": "Bean anthracnose (Colletotrichum lindemuthianum)",
@@ -318,19 +440,28 @@
       "Sunken dark spots on pods with pink or tan centres",
       "Spotted, discoloured seed"
     ],
-    "possibleCauses": ["fungal infection", "infected seed", "cool wet weather"],
+    "possibleCauses": [
+      "fungal infection",
+      "infected seed",
+      "cool wet weather"
+    ],
     "treatment": "Remove infected plants. Fungicides can protect the crop in wet weather. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Plant certified clean seed, never seed from infected pods",
       "Do not work in the field when plants are wet",
       "Rotate crops"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Bean___Healthy": {
     "diseaseName": "Healthy",
     "cropType": "Bean",
-    "symptoms": ["No visible signs of disease or pest damage"],
+    "symptoms": [
+      "No visible signs of disease or pest damage"
+    ],
     "possibleCauses": [],
     "treatment": "No treatment needed. Keep monitoring.",
     "prevention": [
@@ -338,7 +469,10 @@
       "Rotate crops each season",
       "Use certified seed"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Bean___Rust": {
     "diseaseName": "Bean rust (Uromyces appendiculatus)",
@@ -348,14 +482,20 @@
       "Yellow rings around the spots",
       "Leaves dry and fall early"
     ],
-    "possibleCauses": ["fungal infection spread by wind", "humid weather with cool nights"],
+    "possibleCauses": [
+      "fungal infection spread by wind",
+      "humid weather with cool nights"
+    ],
     "treatment": "Fungicides can slow rust when applied early. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Plant rust-resistant varieties",
       "Remove crop debris after harvest",
       "Avoid planting next to an infected crop"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Potato___Early_Blight": {
     "diseaseName": "Early blight (Alternaria solani)",
@@ -365,19 +505,28 @@
       "Yellowing around the spots",
       "Shallow dark patches on tubers"
     ],
-    "possibleCauses": ["fungal infection", "warm weather with dew", "stressed or ageing plants"],
+    "possibleCauses": [
+      "fungal infection",
+      "warm weather with dew",
+      "stressed or ageing plants"
+    ],
     "treatment": "Protectant fungicides such as mancozeb slow the disease. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Use certified seed potatoes",
       "Rotate crops",
       "Keep plants well fed"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Potato___Healthy": {
     "diseaseName": "Healthy",
     "cropType": "Potato",
-    "symptoms": ["No visible signs of disease or pest damage"],
+    "symptoms": [
+      "No visible signs of disease or pest damage"
+    ],
     "possibleCauses": [],
     "treatment": "No treatment needed. Keep monitoring, especially for late blight in wet weather.",
     "prevention": [
@@ -385,7 +534,10 @@
       "Hill up soil around stems",
       "Use certified seed potatoes"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Potato___Late_Blight": {
     "diseaseName": "Late blight (Phytophthora infestans)",
@@ -395,14 +547,21 @@
       "White fuzzy growth under leaves in wet weather",
       "Brown rot inside tubers"
     ],
-    "possibleCauses": ["water mould infection", "cool wet weather", "infected seed tubers"],
+    "possibleCauses": [
+      "water mould infection",
+      "cool wet weather",
+      "infected seed tubers"
+    ],
     "treatment": "Act quickly: destroy infected plants. Fungicides with metalaxyl or cymoxanil, alongside a protectant such as mancozeb, are commonly recommended. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Use certified seed and tolerant varieties",
       "Hill up soil to protect tubers",
       "Start protective sprays before long rains as advised by extension"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Cashew___Anthracnose": {
     "diseaseName": "Cashew anthracnose (Colletotrichum gloeosporioides)",
@@ -412,14 +571,20 @@
       "Shoots and flowers dry and die back",
       "Dark sunken spots on cashew apples and nuts"
     ],
-    "possibleCauses": ["fungal infection", "wet humid weather at flushing and flowering"],
+    "possibleCauses": [
+      "fungal infection",
+      "wet humid weather at flushing and flowering"
+    ],
     "treatment": "Prune and destroy infected shoots. Fungicides protect new flushes. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Prune for an open canopy",
       "Remove infected plant parts",
       "Protect flushes during wet weather"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Cashew___Gummosis": {
     "diseaseName": "Gummosis (Lasiodiplodia theobromae)",
@@ -429,19 +594,27 @@
       "Bark darkens and splits around the gum",
       "Branches wilt and die back"
     ],
-    "possibleCauses": ["fungal infection through wounds", "tree stress"],
+    "possibleCauses": [
+      "fungal infection through wounds",
+      "tree stress"
+    ],
     "treatment": "Scrape away diseased bark and treat the wound as advised by your extension officer. Remove dead branches. Ask your agrovet for the product registered in Kenya.",
     "prevention": [
       "Avoid wounding trunks",
       "Prune with clean tools",
       "Keep trees well nourished"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Cashew___Healthy": {
     "diseaseName": "Healthy",
     "cropType": "Cashew",
-    "symptoms": ["No visible signs of disease or pest damage"],
+    "symptoms": [
+      "No visible signs of disease or pest damage"
+    ],
     "possibleCauses": [],
     "treatment": "No treatment needed. Keep monitoring at flushing and flowering.",
     "prevention": [
@@ -449,7 +622,10 @@
       "Keep the orchard weeded",
       "Prune dead wood"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Cashew___Leaf_Miner": {
     "diseaseName": "Cashew leaf miner (Acrocercops syngramma)",
@@ -459,14 +635,19 @@
       "Blisters dry and leaves crumple",
       "Young flushes look scorched"
     ],
-    "possibleCauses": ["pest damage: moth larvae feeding inside young leaves"],
+    "possibleCauses": [
+      "pest damage: moth larvae feeding inside young leaves"
+    ],
     "treatment": "Protect new flushes if damage is heavy, using an insecticide recommended by your extension officer. Ask your agrovet for the product and rate registered in Kenya.",
     "prevention": [
       "Monitor each new flush",
       "Encourage natural enemies",
       "Remove heavily infested shoots"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   },
   "Cashew___Red_Rust": {
     "diseaseName": "Red rust (algal leaf spot, Cephaleuros virescens)",
@@ -476,13 +657,19 @@
       "Spots are raised and round",
       "Heavily covered leaves turn yellow"
     ],
-    "possibleCauses": ["algal infection", "humid shaded conditions"],
+    "possibleCauses": [
+      "algal infection",
+      "humid shaded conditions"
+    ],
     "treatment": "Prune to let in light and air. Copper-based products are commonly recommended. Ask your agrovet or extension officer for the product and rate registered in Kenya.",
     "prevention": [
       "Prune for an open canopy",
       "Avoid over-crowding trees",
       "Keep trees well nourished"
     ],
-    "reviewed": false
+    "reviewed": false,
+    "source": null,
+    "chemicals": [],
+    "sw": null
   }
 }
