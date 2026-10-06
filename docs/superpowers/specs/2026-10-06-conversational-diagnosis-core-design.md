@@ -36,7 +36,7 @@ Steps 1–4 are Phase A. Step 5 is Phase B. Both are in this spec. Step 6 is not
 - **Rules in code** decide what happens at each confidence level. Prompt instructions are not
   relied on for this.
 - **All farmer-facing advice** (treatment, prevention, chemicals, doses) comes from the
-  agronomist-reviewed knowledge base (KB). A model, whether OpenAI, the local classifier or the
+  source-cited knowledge base (KB). A model, whether OpenAI, the local classifier or the
   agent, can never introduce a chemical or a dose.
 
 Swapping OpenAI for the local classifier changes nothing downstream. Swapping the orchestrator
@@ -166,7 +166,7 @@ types.
 |---|---|---|---|
 | `classify_image` | image buffer, optional answer ids | `{crop, label, confidence, top2, band}` or `{band:'rejected', reason}` | Runs the classifier, then the checker (§4.2), then computes the band (§4.3). Captures the training example via `scanService` on every call (Strip to Core §4.1). |
 | `ask_farmer` | `top2` labels | the question for that pair, or none | Questions come only from `questions.json`. At most 2 questions per scan. |
-| `get_advice` | label, language | KB entry or `unreviewed` | Returns text only for entries marked `reviewed: true`. |
+| `get_advice` | label, language | KB entry, with unsourced fields removed | Returns only fields that pass the provenance gate (§4.4). |
 | `get_farm_context` | channel id | crops, region, recent scans | Can only read the calling channel and its linked user's farms. |
 | `flag_for_review` | scan id | ok | Sets `reviewStatus = 'PENDING'`. |
 
@@ -260,7 +260,7 @@ The checker runs at two points.
     confidence at which accuracy on the eval set is at least 90%.
   - Both live in `packages/ai/rules.ts` as the calibration knob.
 - **Healthy:** a `Healthy` label never comes with treatment advice.
-- **Unreviewed KB entry:** the reply gives the label and says "ask your agrovet for treatment".
+- **No sourced advice for a label:** the reply gives the label and says "ask your agrovet for treatment".
   It never falls back to model-written advice.
 - **Unsupported crop or no plant:** a fixed reply. The image is still captured.
 - **Wording:** a diagnosis reply always ends with the same short line saying this is advice and
@@ -271,18 +271,36 @@ The checker runs at two points.
 The KB lives in `packages/ai/kb/` and is versioned in git:
 
 - `labels.json`: the closed label list (§2).
-- `advice.json`: per label, `{ reviewed: boolean, sw: {...}, en: {...} }` with treatment and
-  prevention. Chemicals are limited to products registered with Kenya's Pest Control Products
-  Board (PCPB).
+- `advice.json`: one entry per label, holding `description`, `cultural[]` (non-chemical
+  practices) and `chemical[]` in both `sw` and `en`.
+  - Every entry carries `source`: a URL and title for the publication it is drawn from.
+  - Every chemical item also carries the product name, active ingredient, dose as published,
+    and `pcpbReg`, its Kenya Pest Control Products Board registration number.
+  - `agronomistReviewed` (a date or null) records post-launch audits. It does not gate anything.
 - `questions.json`: per look-alike label pair, 1–2 questions with up to 3 answer options, each
-  answer weighted toward one label of the pair.
+  answer weighted toward one label of the pair, plus a `source`.
   - Example: Early_Blight vs Late_Blight is separated by timeline (when symptoms appeared
     relative to flowering and fruiting), rate of spread, and recent cool, wet weather.
 
-Claude drafts the first entries from public extension material, and they are marked
-`reviewed: false` until the agronomist signs them off. Advice is only sent for reviewed
-entries. Questions can be used while unreviewed because they never tell the farmer to do
-anything, but they are reviewed in the same pass.
+**Provenance gate, not a sign-off gate.** Content ships when it can be traced to an authoritative
+source. It does not wait for one reviewer's calendar. Sources, in order of preference: CABI
+PlantwisePlus pest management decision guides for Kenya, KALRO factsheets, Coffee Research
+Institute guides for coffee, and the PCPB registered-product list for chemicals. Claude drafts the
+entries from these, and the gate is enforced by the KB integrity test (§6), not by review.
+
+| Content | Sent when |
+|---|---|
+| Disease name and description | the label is in `labels.json` |
+| Cultural practices | the entry has a `source` |
+| Chemical product, active ingredient, dose | the entry has a `source` **and** the item has a `pcpbReg` |
+| Any field without provenance | never; the reply falls back to "ask your agrovet for treatment" |
+| A question for a look-alike pair | the question has a `source`. A pair with no sourced question goes straight to `uncertain`. |
+
+The dose is reproduced exactly as published; it is never computed or converted. The agronomist
+becomes an auditor rather than a gate. They spot-check entries after launch, starting with the
+labels that get the most traffic (the tomato and potato blights), and review flagged scans. A
+correction they make goes into `advice.json` like any other change and is judged against the
+eval.
 
 ## 5. Faithful eval
 
@@ -328,10 +346,10 @@ and Redis are faked.
 | Adapters | WhatsApp payload → `InboundMessage` for image, button, text, commands and unsupported types; `send` builds valid interactive payloads; the 24-hour window refusal |
 | Context filter | each rejection reason; a stale or forged button id; an opted-out channel |
 | Checker | an out-of-list label; a crop/label mismatch; malformed JSON; confidence out of range; faithfulness pass and fail |
-| Rules | band edges at exactly `T_HIGH` and `T_LOW`; Healthy gets no advice; unreviewed KB entry |
+| Rules | band edges at exactly `T_HIGH` and `T_LOW`; Healthy gets no advice; label with no sourced advice |
 | Tools | `classify_image` captures a scan on every path, including rejected; `get_farm_context` refuses another channel's farm; `ask_farmer` cap of 2 |
 | Orchestrator | every branch in §3.5 with a fake classifier; Redis key lost mid-conversation |
-| KB integrity | every label has an advice entry and appears in `labels.json`; every question pair refers to real labels; every answer option has a translation in both languages |
+| KB integrity | every label has an advice entry and appears in `labels.json`; every question pair refers to real labels; every answer option has a translation in both languages; **every advice entry and question has a `source`, and every chemical item has a `pcpbReg`** — otherwise the build fails |
 
 The `trace` stored on each Scan (a list of tool name, input summary and output summary) is
 written in Phase A as well, so the Phase B trajectory tests and the eval read one format.
@@ -356,8 +374,13 @@ written in Phase A as well, so the Phase B trajectory tests and the eval read on
 
 ## 8. Risks
 
-- **The agronomist is the bottleneck.** Until the KB is reviewed, replies give the label only.
-  The bot is still useful (diagnosis plus "ask your agrovet"), and the gate is deliberate.
+- **Published guidance can be stale or generic.** A Plantwise or KALRO guide may lag behind new
+  registrations or local resistance patterns. Mitigations: the PCPB registration number is
+  checked against the current register when an entry is added, the agronomist audits the
+  highest-traffic labels first, and every reply ends with the "consult an agrovet" line (§4.3).
+- **Source coverage gaps.** Some labels (for example cashew gummosis, or the coffee Phoma
+  disease) may have no Kenya-specific guide. Those labels ship with a description only, and the
+  missing sources are listed in the KB drafting task's output.
 - **Simulated answers are optimistic.** Scripted answers are always correct, and real farmers'
   answers will be noisier. Question lift on the eval is an upper bound. Track the real lift from
   `Scan.answers` once farmers start verifying scans.
