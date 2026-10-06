@@ -41,6 +41,7 @@ const app = require('../src/app').default;
 const { routeIntent } = require('../src/channels/whatsapp/intent.router');
 const { handleInboundJob } = require('../src/channels/whatsapp/inbound.worker');
 const { inboundQueue } = require('../src/channels/whatsapp/inbound.queue');
+const farmerService = require('../src/services/farmer.service');
 
 let passed = 0;
 let failed = 0;
@@ -59,7 +60,8 @@ const PHONE_TEXT = '254700000901';
 const PHONE_STOP = '254700000902';
 const PHONE_IDEMPOTENT = '254700000903';
 const PHONE_IMAGE = '254700000904';
-const PHONES = [PHONE_TEXT, PHONE_STOP, PHONE_IDEMPOTENT, PHONE_IMAGE];
+const PHONE_BURSTS = ['254700000905', '254700000906', '254700000907'];
+const PHONES = [PHONE_TEXT, PHONE_STOP, PHONE_IDEMPOTENT, PHONE_IMAGE, ...PHONE_BURSTS];
 const JOB_IDS: string[] = [];
 
 function messagePayload(from: string, id: string, message: Record<string, unknown>) {
@@ -112,6 +114,21 @@ async function cleanup() {
 
 async function run(base: string) {
   await cleanup();
+
+  // --- A new farmer's first messages often arrive together (photo + text),
+  // and the worker runs them concurrently. Creating the channel must not fail
+  // for all but one of them, or the losers are retried out of order.
+  // One round right after startup can pass by luck (cold pool), so run three.
+  const rejected: PromiseRejectedResult[] = [];
+  let channelsPerPhone = new Set<number>();
+  for (const phone of PHONE_BURSTS) {
+    const burst = await Promise.allSettled(Array.from({ length: 20 }, () => farmerService.touchChannel(phone)));
+    rejected.push(...(burst.filter((r) => r.status === 'rejected') as PromiseRejectedResult[]));
+    channelsPerPhone.add(await prisma.farmerChannel.count({ where: { phone: `+${phone}` } }));
+  }
+  check('concurrent first contact creates the channel without errors', rejected.length === 0,
+    `rejected=${rejected.length} ${rejected[0]?.reason?.code ?? ''}`);
+  check('concurrent first contact yields one channel per phone', channelsPerPhone.size === 1 && channelsPerPhone.has(1));
 
   // --- Meta's verification handshake
   let res = await fetch(
