@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { connectAuthEmulator, getAuth } from 'firebase/auth';
 
 // Firebase configuration
 
@@ -20,4 +20,10 @@ const firebaseConfig = {
 // Firebase is used for Auth only. Profile data lives in Postgres.
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Local end-to-end runs sign in against the Firebase Auth emulator instead of
+// the real project. The backend's Admin SDK follows FIREBASE_AUTH_EMULATOR_HOST.
+if (import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST) {
+  connectAuthEmulator(auth, `http://${import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST}`, { disableWarnings: true });
+}
 export default app;

@@ -72,3 +72,6 @@ serviceAccountKey.json
 # Local tooling output
 /graphify-out/
 /.claude/
+
+# Playwright MCP output
+/.playwright-mcp/
