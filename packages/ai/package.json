@@ -1,5 +1,11 @@
 {
   "name": "@farmassist/ai",
   "version": "1.0.0",
-  "main": "index.ts"
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./manifest": "./manifest.ts",
+    "./questions": "./questions.ts",
+    "./abstention": "./abstention.ts"
+  }
 }
