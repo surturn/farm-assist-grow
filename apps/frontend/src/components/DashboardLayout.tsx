@@ -1,21 +1,11 @@
-import { ReactNode, useState, useEffect } from "react";
-import { Home, Camera, Map as MapIcon, Settings, Sprout, LogOut, User, ChevronDown, Plus } from "lucide-react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { ReactNode, useEffect, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
+import { Check, ChevronsUpDown, LayoutGrid, LogOut, Moon, Plus, ScanLine, Settings, Sun } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFarm } from "@/contexts/FarmContext";
-import { useTranslation } from "react-i18next";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { dashboardService } from "@/services/dashboard.service";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,241 +14,197 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { dashboardService } from "@/services/dashboard.service";
 
-const getNavigationItems = () => [
-  { label: "Dashboard", icon: Home, route: "/dashboard" },
-  { label: "Scan", icon: Camera, route: "/scan" },
-  { label: "Settings", icon: Settings, route: "/settings" },
+const NAV = [
+  { label: "Overview", icon: LayoutGrid, to: "/dashboard" },
+  { label: "Scan", icon: ScanLine, to: "/scan" },
+  { label: "Settings", icon: Settings, to: "/settings" },
 ];
 
-function AppSidebar() {
-  const { state } = useSidebar();
-  const location = useLocation();
-  const { t } = useTranslation();
-  const collapsed = state === "collapsed";
-
-
-  const navigationItems = getNavigationItems();
-
-  return (
-    <Sidebar className={collapsed ? "w-14 border-r-0" : "w-64 border-r-0"} collapsible="icon">
-      <SidebarContent className="bg-[#0f5132] text-white flex flex-col h-full">
-        {/* Logo */}
-        <div className="p-6 flex items-center gap-3">
-          <div className="flex items-center justify-center border border-white/20 rounded-md p-1.5">
-            <Sprout className="h-6 w-6 text-white" />
-          </div>
-          {!collapsed && <span className="font-bold text-xl tracking-tight">Farm-Assist</span>}
-        </div>
-
-        {/* Main Navigation */}
-        <SidebarGroup className="mt-4 px-3 flex-1">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-2">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.route;
-                return (
-                  <SidebarMenuItem key={item.route}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.route}
-                        className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 ${
-                          isActive 
-                            ? "bg-[#198754] text-white shadow-sm font-medium" 
-                            : "text-white/80 hover:bg-[#198754]/50 hover:text-white"
-                        }`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        {!collapsed && <span>{item.label}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-      </SidebarContent>
-    </Sidebar>
-  );
-}
-
-function DashboardHeader() {
-  const location = useLocation();
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [displayName, setDisplayName] = useState("Farmer");
+function useShellData() {
+  const { user, loading } = useAuth();
+  const { setFarms, activeFarmId, setActiveFarmId } = useFarm();
+  const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const { user, loading, logout } = useAuth();
-  const { farms, setFarms, activeFarmId, setActiveFarmId } = useFarm();
 
   useEffect(() => {
     if (loading || !user) return;
-
-    const fetchHeaderData = async () => {
-      try {
-        const data = await dashboardService.getDashboardData();
-        
-        if (data.farms) {
-          setFarms(data.farms);
-          if (!activeFarmId && data.activeFarmId) {
-             setActiveFarmId(data.activeFarmId);
-          }
-        }
-
-        if (data.user?.firstName) {
-          setDisplayName(`${data.user.firstName} ${data.user.lastName || ''}`);
-        } else if (user.displayName) {
-          setDisplayName(user.displayName);
-        } else if (user.email) {
-          setDisplayName(user.email);
-        }
-        if (data.user?.avatarUrl) setAvatarUrl(data.user.avatarUrl);
-      } catch (e) {
-        console.error("Failed to fetch header data", e);
-      }
-    };
-
-    fetchHeaderData();
+    dashboardService
+      .getDashboardData()
+      .then((data) => {
+        setFarms(data.farms);
+        // activeFarmId survives in localStorage across accounts (shared phones),
+        // so a farm the current user doesn't own must be replaced, not kept.
+        if (!data.farms.some((f) => f.id === activeFarmId)) setActiveFarmId(data.activeFarmId);
+        const full = [data.user?.firstName, data.user?.lastName].filter(Boolean).join(" ");
+        setName(full || user.displayName || user.email || "");
+        setAvatarUrl(data.user?.avatarUrl ?? "");
+      })
+      .catch(() => setName(user.displayName || user.email || ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user]);
 
-  const getPageTitle = () => {
-    const route = location.pathname;
-    const navigationItems = getNavigationItems();
-    const item = navigationItems.find((i) => i.route === route);
-    return item?.label || "Dashboard";
-  };
+  return { name, avatarUrl, email: user?.email ?? "" };
+}
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "F";
+}
 
-  const getUserInitials = () => {
-    if (user?.email) {
-      return user.email.substring(0, 2).toUpperCase();
-    }
-    return "SY";
-  };
-
-
+function FarmSwitcher({ compact = false }: { compact?: boolean }) {
+  const { farms, activeFarmId, setActiveFarmId } = useFarm();
+  const navigate = useNavigate();
+  const active = farms.find((f) => f.id === activeFarmId) ?? farms[0];
 
   return (
-    <header className="h-[72px] border-b border-gray-100 bg-white px-6 flex items-center justify-between sticky top-0 z-40">
-      <div className="flex items-center gap-4">
-        <SidebarTrigger className="text-gray-500 hover:text-gray-900" />
-        <h1 className="text-[22px] font-semibold text-gray-900 tracking-tight">{getPageTitle()}</h1>
-      </div>
-
-      <div className="flex items-center gap-6">
-        {/* Farm Switcher */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2 h-9 rounded-full border-gray-200 shadow-sm text-sm font-medium">
-              <MapIcon className="h-4 w-4 text-green-600" />
-              <span className="truncate max-w-[120px]">
-                {farms.length === 0
-                  ? "Add a farm"
-                  : farms.find((f) => f.id === activeFarmId)?.name || "Select Farm"}
-              </span>
-              <ChevronDown className="h-3 w-3 text-gray-400" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg p-2">
-            <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider font-semibold px-2">Your Farms</DropdownMenuLabel>
-            {farms.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-gray-400">No farms yet. Create one to get started.</p>
-            ) : (
-              farms.map((farm) => (
-                <DropdownMenuItem
-                  key={farm.id}
-                  className={`rounded-lg cursor-pointer flex items-center justify-between mt-1 ${activeFarmId === farm.id ? 'bg-green-50 text-green-700' : ''}`}
-                  onClick={() => setActiveFarmId(farm.id)}
-                >
-                  <span className="font-medium">{farm.name}</span>
-                  {activeFarmId === farm.id && <div className="h-2 w-2 rounded-full bg-green-600" />}
-                </DropdownMenuItem>
-              ))
-            )}
-            <DropdownMenuSeparator className="my-2" />
-            <DropdownMenuItem asChild className="rounded-lg cursor-pointer text-green-700 focus:text-green-800 focus:bg-green-50">
-              <NavLink to="/settings?tab=farm">
-                <Plus className="mr-2 h-4 w-4" />
-                <span>Create new farm...</span>
-              </NavLink>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Icons & Profile */}
-        <div className="flex items-center gap-4 border-l border-gray-100 pl-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2.5 hover:bg-gray-50 rounded-full py-1.5 px-2 h-auto">
-                <Avatar className="h-9 w-9 border border-gray-100 shadow-sm">
-                  <AvatarImage src={avatarUrl} alt="Avatar" className="object-cover" />
-                  <AvatarFallback className="bg-[#198754] text-white font-semibold text-sm">
-                    {getUserInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden md:flex items-center gap-1.5">
-                  <span className="text-sm font-medium text-gray-700">{displayName}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-gray-100 p-2">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none text-gray-900">{displayName}</p>
-                  <p className="text-xs leading-none text-gray-500">{user?.email}</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-100" />
-              <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                <NavLink to="/settings">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </NavLink>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                <NavLink to="/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </NavLink>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-gray-100" />
-              <DropdownMenuItem onClick={handleLogout} className="rounded-lg cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    </header>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
+          "transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          compact && "w-auto max-w-[60vw]",
+        )}
+      >
+        <span className="min-w-0 flex-1">
+          {!compact && <span className="block text-xs text-muted-foreground">Farm</span>}
+          <span className="block truncate font-medium">{active?.name ?? "No farm yet"}</span>
+        </span>
+        <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-60">
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Your farms</DropdownMenuLabel>
+        {farms.map((farm) => (
+          <DropdownMenuItem key={farm.id} onSelect={() => setActiveFarmId(farm.id)} className="gap-2">
+            <span className="min-w-0 flex-1 truncate">{farm.name}</span>
+            {farm.id === active?.id && <Check className="size-4 text-primary" aria-label="Current farm" />}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate("/settings#farms")} className="gap-2">
+          <Plus className="size-4" aria-hidden />
+          Add a farm
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-interface DashboardLayoutProps {
-  children: ReactNode;
+function UserMenu({ name, email, avatarUrl, compact = false }: { name: string; email: string; avatarUrl: string; compact?: boolean }) {
+  const { logout } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
+  const navigate = useNavigate();
+  const dark = resolvedTheme === "dark";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          "flex items-center gap-2 rounded-md p-1.5 text-left text-sm transition-colors duration-150 hover:bg-accent",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          !compact && "w-full",
+        )}
+        aria-label="Account menu"
+      >
+        <Avatar className="size-8">
+          <AvatarImage src={avatarUrl} alt="" />
+          <AvatarFallback className="bg-secondary text-xs font-medium">{initials(name)}</AvatarFallback>
+        </Avatar>
+        {!compact && (
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium">{name}</span>
+            <span className="block truncate text-xs text-muted-foreground">{email}</span>
+          </span>
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={compact ? "end" : "start"} side={compact ? "bottom" : "top"} className="w-56">
+        <DropdownMenuItem onSelect={() => setTheme(dark ? "light" : "dark")} className="gap-2">
+          {dark ? <Sun className="size-4" aria-hidden /> : <Moon className="size-4" aria-hidden />}
+          {dark ? "Light mode" : "Dark mode"}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={async () => {
+            await logout();
+            navigate("/login");
+          }}
+          className="gap-2"
+        >
+          <LogOut className="size-4" aria-hidden />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { name, email, avatarUrl } = useShellData();
+
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-[#f8fcf9] font-sans">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <DashboardHeader />
-          <main className="flex-1 p-6 lg:p-8 overflow-y-auto">{children}</main>
+    <div className="min-h-screen bg-background">
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r bg-card md:flex">
+        <div className="px-4 pb-2 pt-5 text-[15px] font-semibold tracking-tight">FarmAssist</div>
+        <div className="px-2 pb-3">
+          <FarmSwitcher />
         </div>
-      </div>
-    </SidebarProvider>
+        <nav aria-label="Main" className="flex flex-col gap-0.5 px-2">
+          {NAV.map(({ label, icon: Icon, to }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors duration-150",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isActive
+                    ? "bg-accent font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )
+              }
+            >
+              <Icon className="size-4" aria-hidden />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="mt-auto border-t p-2">
+          <UserMenu name={name} email={email} avatarUrl={avatarUrl} />
+        </div>
+      </aside>
+
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-card/95 px-3 backdrop-blur md:hidden">
+        <FarmSwitcher compact />
+        <UserMenu name={name} email={email} avatarUrl={avatarUrl} compact />
+      </header>
+
+      <main className="px-4 pb-24 pt-6 md:ml-60 md:px-8 md:pb-10 md:pt-8">
+        <div className="mx-auto max-w-5xl">{children}</div>
+      </main>
+
+      {/* Mobile tab bar: farmers mostly use phones. */}
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+      >
+        {NAV.map(({ label, icon: Icon, to }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              cn(
+                "flex h-14 flex-col items-center justify-center gap-0.5 text-xs transition-colors duration-150",
+                isActive ? "font-medium text-primary" : "text-muted-foreground",
+              )
+            }
+          >
+            <Icon className="size-5" aria-hidden />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
   );
 }
