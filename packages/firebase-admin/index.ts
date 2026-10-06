@@ -9,7 +9,7 @@ let app: admin.app.App;
 
 if (!admin.apps.length) {
     if (!process.env.FIREBASE_PRIVATE_KEY) {
-        console.error('CRITICAL: FIREBASE_PRIVATE_KEY is missing from environment. Firestore Admin will fail.');
+        console.error('CRITICAL: FIREBASE_PRIVATE_KEY is missing from environment. Auth token verification will fail.');
     }
 
     try {
@@ -30,6 +30,5 @@ if (!admin.apps.length) {
     app = admin.app();
 }
 
-export const dbAdmin = admin.firestore();
 export const authAdmin = admin.auth();
 export { admin };
