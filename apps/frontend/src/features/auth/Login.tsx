@@ -179,7 +179,7 @@ const Login = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="sydneykamau2005@gmail.com"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`pl-10 h-11 bg-gray-50 border-gray-200 focus:border-green-500 focus:ring-green-500 ${errors.email ? "border-red-500" : ""}`}

@@ -9,10 +9,8 @@ import { toast } from "sonner";
 import { Leaf, Loader2, TrendingUp, Smartphone, User, Mail, Phone, MapPin, Lock, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 import { updateProfile } from "firebase/auth";
-
-const KENYA_REGIONS = [
-  "Nairobi County", "Mombasa County", "Nakuru County", "Uasin Gishu County", "Kiambu County"
-];
+import { apiClient } from "@/api/client";
+import { KENYA_REGIONS } from "@/lib/weather";
 
 const signUpSchema = z.object({
   firstName: z.string().trim().min(2, { message: "First name must be at least 2 characters" }),
@@ -72,6 +70,13 @@ const SignUp = () => {
     try {
       const userCredential = await signUp(email, password);
       await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+      // The form collects these; without this call they never reached the
+      // profile, and the region drives the dashboard weather.
+      try {
+        await apiClient.patch("/users/profile", { firstName, lastName, phone, region: location });
+      } catch {
+        toast.warning("Account created, but your profile details were not saved. You can add them in Settings.");
+      }
       toast.success("Account Created!", { description: "Welcome to FarmAssist." });
       navigate("/dashboard");
     } catch (error: any) {
@@ -212,7 +217,7 @@ const SignUp = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="sydneykamau2005@gmail.com"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`pl-8 h-9 text-sm bg-gray-50 border-gray-200 focus:border-green-500 focus:ring-green-500 ${errors.email ? "border-red-500" : ""}`}
@@ -242,12 +247,12 @@ const SignUp = () => {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="location" className="text-xs font-semibold text-gray-700">Location / County</Label>
+              <Label htmlFor="location" className="text-xs font-semibold text-gray-700">Region</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 z-10 pointer-events-none" />
                 <Select value={location} onValueChange={setLocation} disabled={loading}>
                   <SelectTrigger className={`pl-8 h-9 text-sm bg-gray-50 border-gray-200 focus:border-green-500 focus:ring-green-500 ${errors.location ? "border-red-500" : ""}`}>
-                    <SelectValue placeholder="Select your county" />
+                    <SelectValue placeholder="Select your region" />
                   </SelectTrigger>
                   <SelectContent>
                     {KENYA_REGIONS.map((region) => (

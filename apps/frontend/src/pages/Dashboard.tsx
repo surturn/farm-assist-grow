@@ -222,9 +222,16 @@ export default function Dashboard() {
                           {scan.createdAt ? format(new Date(scan.createdAt), 'MMM d, yyyy') : 'Recent'}
                         </p>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${(scan.confidence ?? 0) > 80 ? 'bg-[#f2f9f5] text-[#198754]' : 'bg-orange-50 text-orange-600'}`}>
-                        {(scan.confidence ?? 0) > 80 ? 'Healthy' : 'Review'}
-                      </span>
+                      {/* The badge describes the plant, not the model's confidence:
+                          a confident disease diagnosis is not "Healthy". */}
+                      {(() => {
+                        const name = scan.verifiedLabel || scan.diseaseName || '';
+                        const healthy = /^healthy$/i.test(name);
+                        const unsupported = /unsupported/i.test(name);
+                        const label = healthy ? 'Healthy' : unsupported ? 'Unsupported' : 'Disease';
+                        const style = healthy ? 'bg-[#f2f9f5] text-[#198754]' : unsupported ? 'bg-gray-100 text-gray-600' : 'bg-orange-50 text-orange-600';
+                        return <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${style}`}>{label}</span>;
+                      })()}
                     </div>
                   ))}
                 </div>
