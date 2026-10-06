@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
+import type { ReactNode } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { FarmProvider } from "@/contexts/FarmContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -17,12 +19,25 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// The app follows the user's theme; the public pages are designed for light only.
+const APP_ROUTES = ["/dashboard", "/scan", "/settings"];
+function ThemeGate({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  const inApp = APP_ROUTES.some((r) => pathname.startsWith(r));
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem forcedTheme={inApp ? undefined : "light"} disableTransitionOnChange>
+      {children}
+    </ThemeProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ThemeGate>
         <AuthProvider>
           <FarmProvider>
             <Routes>
@@ -37,6 +52,7 @@ const App = () => (
             </Routes>
           </FarmProvider>
         </AuthProvider>
+        </ThemeGate>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

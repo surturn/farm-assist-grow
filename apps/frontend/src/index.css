@@ -2,105 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
+/*
+ * Design tokens. All colors are HSL channels, consumed as hsl(var(--token)).
+ * Neutrals are warm stone; one deep-green accent is reserved for primary
+ * actions and "verified". Status colors carry meaning, never decoration.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 174 39% 15%;
+    --background: 60 9% 98%;
+    --foreground: 24 10% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 174 39% 15%;
+    --card-foreground: 24 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 174 39% 15%;
+    --popover-foreground: 24 10% 10%;
 
-    --primary: 174 72% 42%;
+    --primary: 152 56% 25%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 142 71% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 60 5% 96%;
+    --secondary-foreground: 24 10% 10%;
 
-    --muted: 142 20% 96%;
-    --muted-foreground: 174 20% 45%;
+    --muted: 60 5% 96%;
+    --muted-foreground: 25 5% 42%;
 
-    --accent: 160 84% 57%;
-    --accent-foreground: 174 39% 15%;
+    --accent: 60 5% 94%;
+    --accent-foreground: 24 10% 10%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 72% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 142 30% 88%;
-    --input: 142 30% 88%;
-    --ring: 174 72% 42%;
+    --border: 20 6% 89%;
+    --input: 20 6% 86%;
+    --ring: 152 56% 30%;
 
-    --radius: 0.75rem;
+    /* Status: text and soft background pairs. */
+    --status-healthy: 152 56% 25%;
+    --status-healthy-bg: 145 40% 94%;
+    --status-disease: 28 90% 32%;
+    --status-disease-bg: 40 90% 93%;
+    --status-neutral: 25 5% 38%;
+    --status-neutral-bg: 60 5% 93%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 42%), hsl(160 84% 57%));
-    --gradient-secondary: linear-gradient(135deg, hsl(142 71% 45%), hsl(160 84% 57%));
-    --gradient-hero: linear-gradient(135deg, hsl(174 72% 42% / 0.95), hsl(142 71% 45% / 0.9));
-    
-    --shadow-soft: 0 4px 24px hsl(174 72% 42% / 0.08);
-    --shadow-medium: 0 8px 32px hsl(174 72% 42% / 0.12);
-    
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 174 39% 15%;
-    --sidebar-primary: 174 72% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 142 20% 96%;
-    --sidebar-accent-foreground: 174 72% 42%;
-    --sidebar-border: 142 30% 88%;
-    --sidebar-ring: 174 72% 42%;
+    /* Motion: strong ease-out for UI, kept under 250ms. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .dark {
-    --background: 174 39% 8%;
-    --foreground: 142 20% 96%;
+    --background: 24 10% 7%;
+    --foreground: 60 9% 96%;
 
-    --card: 174 30% 12%;
-    --card-foreground: 142 20% 96%;
+    --card: 24 8% 10%;
+    --card-foreground: 60 9% 96%;
 
-    --popover: 174 30% 12%;
-    --popover-foreground: 142 20% 96%;
+    --popover: 24 8% 11%;
+    --popover-foreground: 60 9% 96%;
 
-    --primary: 174 72% 56%;
-    --primary-foreground: 174 39% 15%;
+    --primary: 150 42% 52%;
+    --primary-foreground: 24 10% 7%;
 
-    --secondary: 142 71% 55%;
-    --secondary-foreground: 174 39% 15%;
+    --secondary: 24 6% 15%;
+    --secondary-foreground: 60 9% 96%;
 
-    --muted: 174 30% 18%;
-    --muted-foreground: 142 20% 65%;
+    --muted: 24 6% 14%;
+    --muted-foreground: 25 6% 64%;
 
-    --accent: 160 84% 62%;
-    --accent-foreground: 174 39% 15%;
+    --accent: 24 6% 17%;
+    --accent-foreground: 60 9% 96%;
 
-    --destructive: 0 62.8% 50%;
+    --destructive: 0 62% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 174 30% 18%;
-    --input: 174 30% 18%;
-    --ring: 174 72% 56%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 56%), hsl(160 84% 62%));
-    --gradient-secondary: linear-gradient(135deg, hsl(142 71% 55%), hsl(160 84% 62%));
-    --gradient-hero: linear-gradient(135deg, hsl(174 72% 56% / 0.95), hsl(142 71% 55% / 0.9));
-    
-    --shadow-soft: 0 4px 24px hsl(174 72% 56% / 0.15);
-    --shadow-medium: 0 8px 32px hsl(174 72% 56% / 0.2);
+    --border: 24 6% 18%;
+    --input: 24 6% 22%;
+    --ring: 150 42% 52%;
 
-    --sidebar-background: 174 39% 10%;
-    --sidebar-foreground: 142 20% 96%;
-    --sidebar-primary: 174 72% 56%;
-    --sidebar-primary-foreground: 174 39% 15%;
-    --sidebar-accent: 174 30% 18%;
-    --sidebar-accent-foreground: 142 20% 96%;
-    --sidebar-border: 174 30% 18%;
-    --sidebar-ring: 174 72% 56%;
+    --status-healthy: 150 42% 62%;
+    --status-healthy-bg: 152 30% 14%;
+    --status-disease: 38 92% 62%;
+    --status-disease-bg: 30 40% 14%;
+    --status-neutral: 25 6% 66%;
+    --status-neutral-bg: 24 6% 16%;
   }
 }
 
@@ -110,6 +95,12 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Numbers that change or line up in columns must not jitter. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
