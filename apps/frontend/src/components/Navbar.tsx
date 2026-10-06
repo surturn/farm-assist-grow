@@ -73,30 +73,8 @@ export default function Navbar() {
                     <ListItem href="/dashboard" title="Dashboard">
                       Real-time analytics and farm management overview.
                     </ListItem>
-                    <ListItem href="/crop-planner" title="Crop Planning">
-                      AI-driven crop rotation and yield forecasting.
-                    </ListItem>
                     <ListItem href="/scan" title="Disease AI Scan">
                       Instantly identify crop diseases using your camera.
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent hover:bg-transparent text-gray-600 hover:text-green-700 font-medium text-sm">Ecosystem</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                    <ListItem href="/agrovet" title="Agrovet Marketplace">
-                      Order authentic seeds, fertilizers, and equipment.
-                    </ListItem>
-                    <ListItem href="/trees" title="Agroforestry">
-                      Manage your timber and fruit tree investments.
-                    </ListItem>
-                    <ListItem href="/farms" title="Farm Mapping">
-                      GPS coordinate tracking for your plots.
-                    </ListItem>
-                    <ListItem href="#offline" title="Offline Mode">
-                      Full functionality even without internet access.
                     </ListItem>
                   </ul>
                 </NavigationMenuContent>

@@ -213,10 +213,8 @@ export default function Dashboard() {
                   {recentScans.map((scan: any, i: number) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden shrink-0">
-                        {scan.imageUrl
-                          ? <img src={scan.imageUrl} className="w-full h-full object-cover" alt="" />
-                          : <div className="w-full h-full flex items-center justify-center bg-green-50"><Sprout className="w-5 h-5 text-green-600" /></div>
-                        }
+                        {/* Scan images are private training data and never served. */}
+                        <div className="w-full h-full flex items-center justify-center bg-green-50"><Sprout className="w-5 h-5 text-green-600" /></div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-900 truncate">{scan.cropName || scan.diseaseName || "Crop Scan"}</p>
