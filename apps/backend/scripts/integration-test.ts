@@ -245,6 +245,11 @@ async function run(base: string) {
   check('client-supplied diagnosis is ignored', second.scan?.diseaseName === 'Tomato Early Blight');
   check('same image is stored once', second.scan?.imageUrl === created.scan?.imageUrl);
 
+  res = await fetch(`${base}/api/v1/dashboard`, { headers: AUTH });
+  let counts: any = await res.json();
+  check('dashboard counts unverified scans as awaiting', counts.awaitingScans === 2 && counts.verifiedScans === 0,
+    `awaiting=${counts.awaitingScans} verified=${counts.verifiedScans}`);
+
   for (const bad of ['not-a-data-url', 'data:image/gif;base64,R0lGOD', 'data:image/png;base64,@@@@']) {
     res = await fetch(`${base}/api/v1/scans`, { method: 'POST', headers: jsonAuth, body: JSON.stringify({ imageBase64: bad }) });
     check(`bad image "${bad.slice(0, 20)}" is 400`, res.status === 400, `status=${res.status}`);
@@ -268,6 +273,11 @@ async function run(base: string) {
   await fetch(`${base}/api/v1/scans/${created.scan.id}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: false, label: 'x' }) });
   const kept = await prisma.scan.findUnique({ where: { id: created.scan.id } });
   check('farmer cannot overwrite an agronomist label', kept?.verifiedLabel === 'Septoria');
+
+  res = await fetch(`${base}/api/v1/dashboard`, { headers: AUTH });
+  counts = await res.json();
+  check('dashboard counts verified scans', counts.verifiedScans === 2 && counts.awaitingScans === 0,
+    `awaiting=${counts.awaitingScans} verified=${counts.verifiedScans}`);
 
   TOKEN_UID = 'ITEST_user_outsider';
   res = await fetch(`${base}/api/v1/scans/${second.scan.id}/verify`, { method: 'PATCH', headers: jsonAuth, body: JSON.stringify({ correct: true }) });
