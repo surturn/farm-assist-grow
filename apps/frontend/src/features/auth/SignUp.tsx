@@ -284,6 +284,10 @@ const SignUp = () => {
               {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
             </div>
 
+            <p className="text-xs text-gray-500">
+              By creating an account you agree that photos you scan are stored and used to improve FarmAssist's crop diagnosis.
+            </p>
+
             <Button
               type="submit"
               className="w-full h-9 bg-green-700 hover:bg-green-800 text-white font-semibold rounded-lg mt-2"

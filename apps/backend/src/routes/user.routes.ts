@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-import { uploadAvatar, updateProfile } from '../controllers/user.controller';
+import { uploadAvatar, updateProfile, getMe } from '../controllers/user.controller';
 import { requireAuth } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -21,6 +21,9 @@ const upload = multer({
     }
   }
 });
+
+// GET /api/v1/users/me
+router.get('/me', requireAuth, getMe);
 
 // PATCH /api/v1/users/profile
 router.patch('/profile', requireAuth, updateProfile);

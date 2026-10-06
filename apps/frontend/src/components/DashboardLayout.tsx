@@ -4,8 +4,6 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFarm } from "@/contexts/FarmContext";
 import { useTranslation } from "react-i18next";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import {
   Sidebar,
   SidebarContent,
@@ -120,32 +118,13 @@ function DashboardHeader() {
         } else if (user.email) {
           setDisplayName(user.email);
         }
+        if (data.user?.avatarUrl) setAvatarUrl(data.user.avatarUrl);
       } catch (e) {
         console.error("Failed to fetch header data", e);
       }
     };
 
-    // Fetch avatar and display name from Firestore (where Settings saves them)
-    const fetchFirestoreProfile = async () => {
-      try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const profile = docSnap.data();
-          if (profile.avatarUrl) {
-            setAvatarUrl(profile.avatarUrl);
-          }
-          if (profile.full_name) {
-            setDisplayName(profile.full_name);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch Firestore profile", e);
-      }
-    };
-
     fetchHeaderData();
-    fetchFirestoreProfile();
   }, [loading, user]);
 
   const getPageTitle = () => {
