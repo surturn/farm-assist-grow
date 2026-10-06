@@ -43,6 +43,7 @@ authAdmin.verifyIdToken = async () => ({
 });
 
 const { prisma } = require('@farmassist/database');
+const { redis } = require('@farmassist/redis');
 const sharp = require('sharp');
 const app = require('../src/app').default;
 
@@ -84,6 +85,17 @@ function check(name: string, ok: boolean, detail = '') {
 }
 
 async function cleanup() {
+  // Rate-limit counters outlive a run (1h window), so repeated runs would
+  // start hitting 429s. Clear the test users' counters.
+  // The client connects lazily; give it up to 2s, then skip if Redis is down
+  // (the rate limiter fails open in that case anyway).
+  for (let i = 0; i < 20 && !['ready', 'end'].includes(redis.status); i++) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  if (redis.status === 'ready') {
+    const keys: string[] = await redis.keys('rate-limit:*:ITEST_*');
+    if (keys.length) await redis.del(...keys);
+  }
   // Provisioned tenants get random uuids, so they are only reachable through
   // the membership rows of the test users.
   const memberships = await prisma.tenantUser.findMany({ where: { userId: { in: UIDS } } });
@@ -177,6 +189,19 @@ async function run(base: string) {
 
   res = await fetch(`${base}/api/v1/users/avatar`, { method: 'POST', body: form });
   check('avatar upload rejects an unauthenticated caller', res.status === 401, `status=${res.status}`);
+
+  // --- Profile has one source of truth: Postgres.
+  TOKEN_UID = 'ITEST_user_avatar';
+  res = await fetch(`${base}/api/v1/users/profile`, {
+    method: 'PATCH', headers: { ...AUTH, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ firstName: 'Wanjiru', lastName: 'Kamau', region: 'Rift Valley', preferredLanguage: 'sw' }),
+  });
+  check('profile update returns 200', res.status === 200, `status=${res.status}`);
+  res = await fetch(`${base}/api/v1/users/me`, { headers: AUTH });
+  const me: any = await res.json().catch(() => ({}));
+  check('GET /users/me returns 200', res.status === 200, `status=${res.status}`);
+  check('profile round-trips through Postgres', me.firstName === 'Wanjiru' && me.region === 'Rift Valley' && me.preferredLanguage === 'sw');
+  check('/users/me includes the avatar', typeof me.avatarUrl === 'string');
 
   // --- A farm id in the request body must be checked against membership.
   // The first test user owns a farm; a second, unrelated user must not be

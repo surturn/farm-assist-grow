@@ -86,3 +86,21 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: 'Failed to update profile' });
   }
 };
+
+export const getMe = async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const { prisma } = require('@farmassist/database');
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, firstName: true, lastName: true, phone: true, region: true, preferredLanguage: true, avatarUrl: true, createdAt: true },
+  });
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+  res.status(200).json(user);
+};
