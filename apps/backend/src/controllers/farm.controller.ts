@@ -17,7 +17,7 @@ export const getFarms = async (req: Request, res: Response) => {
             },
             include: {
                 _count: {
-                    select: { crops: true, tasks: true, scans: true, notes: true }
+                    select: { scans: true, notes: true }
                 }
             }
         });
