@@ -11,7 +11,7 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
         const farmId = req.query.farmId as string | undefined;
         const scanFilter = { userId, ...(farmId ? { farmId } : {}) };
 
-        const [user, farms, recentScans, totalScans] = await Promise.all([
+        const [user, farms, recentScans, totalScans, verifiedScans, awaitingScans] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: userId },
                 select: { firstName: true, lastName: true, avatarUrl: true, region: true },
@@ -22,6 +22,9 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
             }),
             prisma.scan.findMany({ where: scanFilter, orderBy: { createdAt: 'desc' }, take: 5 }),
             prisma.scan.count({ where: scanFilter }),
+            prisma.scan.count({ where: { ...scanFilter, verifiedLabel: { not: null } } }),
+            // Unsupported-crop scans have nothing to confirm, so they never wait on the farmer.
+            prisma.scan.count({ where: { ...scanFilter, verifiedLabel: null, NOT: { diseaseName: 'Unsupported crop' } } }),
         ]);
 
         return res.status(200).json({
@@ -31,6 +34,8 @@ export const getDashboardData = async (req: Request, res: Response): Promise<any
             activeFarmId: farmId || farms[0]?.id || null,
             recentScans,
             totalScans,
+            verifiedScans,
+            awaitingScans,
         });
     } catch (error: any) {
         console.error('Dashboard Data Error:', error);

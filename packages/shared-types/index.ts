@@ -11,4 +11,6 @@ export interface DashboardData {
   activeFarmId: string | null;
   recentScans: any[];
   totalScans: number;
+  verifiedScans: number;
+  awaitingScans: number;
 }
