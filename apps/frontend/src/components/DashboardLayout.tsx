@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from "react";
-import { Home, Camera, Map as MapIcon, Calendar, TreeDeciduous, Settings, Bell, Search, Sprout, LogOut, User, ChevronDown, ArrowRight, CheckSquare, ShoppingBag, Plus } from "lucide-react";
+import { Home, Camera, Map as MapIcon, Settings, Sprout, LogOut, User, ChevronDown, Plus } from "lucide-react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useFarm } from "@/contexts/FarmContext";
@@ -27,27 +27,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { dashboardService } from "@/services/dashboard.service";
 
-const getNavigationItems = (t: any, systemMode: string = 'basic') => {
-  const items = [
-    { label: "Dashboard", icon: Home, route: "/dashboard" },
-    { label: "Scan", icon: Camera, route: "/scan" },
-    { label: "Planning", icon: Calendar, route: "/planning" },
-  ];
-
-  if (systemMode === 'iot' || systemMode === 'hybrid') {
-    items.push({ label: "Farms", icon: MapIcon, route: "/farms" });
-    items.push({ label: "Trees", icon: TreeDeciduous, route: "/trees" });
-  }
-
-  items.push({ label: "Shop", icon: ShoppingBag, route: "/shop" });
-  items.push({ label: "Settings", icon: Settings, route: "/settings" });
-  return items;
-};
+const getNavigationItems = () => [
+  { label: "Dashboard", icon: Home, route: "/dashboard" },
+  { label: "Scan", icon: Camera, route: "/scan" },
+  { label: "Settings", icon: Settings, route: "/settings" },
+];
 
 function AppSidebar() {
   const { state } = useSidebar();
@@ -55,25 +42,8 @@ function AppSidebar() {
   const { t } = useTranslation();
   const collapsed = state === "collapsed";
 
-  const [systemMode, setSystemMode] = useState<string>('basic');
-  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    if (loading || !user) return;
-
-    const fetchSystemMode = async () => {
-      try {
-        const data = await dashboardService.getDashboardData();
-        setSystemMode(data.systemMode || 'basic');
-      } catch (error) {
-        console.error("Failed to fetch system mode:", error);
-      }
-    };
-
-    fetchSystemMode();
-  }, [loading, user]);
-
-  const navigationItems = getNavigationItems(t, systemMode);
+  const navigationItems = getNavigationItems();
 
   return (
     <Sidebar className={collapsed ? "w-14 border-r-0" : "w-64 border-r-0"} collapsible="icon">
@@ -115,35 +85,8 @@ function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Upgrade Card at Bottom */}
-        {!collapsed && (
-          <div className="p-4 mt-auto mb-4">
-            <div className="relative bg-[#0b3d25] rounded-xl p-5 overflow-hidden border border-white/10 shadow-lg">
-              <Sprout className="absolute -bottom-6 -right-6 h-32 w-32 text-white/5 rotate-[-20deg]" />
-              <div className="relative z-10 flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-white font-semibold">
-                  <StarIcon className="h-5 w-5 text-yellow-400" /> Upgrade to Pro
-                </div>
-                <p className="text-xs text-white/70 leading-relaxed">
-                  Unlock advanced insights, unlimited scans & more.
-                </p>
-                <Button className="w-full bg-[#198754] hover:bg-[#146c43] text-white rounded-lg h-9 text-xs font-medium mt-1">
-                  Upgrade Now <ArrowRight className="ml-2 h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </SidebarContent>
     </Sidebar>
-  );
-}
-
-function StarIcon(props: any) {
-  return (
-    <svg {...props} fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
   );
 }
 
@@ -151,7 +94,6 @@ function DashboardHeader() {
   const location = useLocation();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
   const [displayName, setDisplayName] = useState("Farmer");
   const [avatarUrl, setAvatarUrl] = useState("");
   const { user, loading, logout } = useAuth();
@@ -163,8 +105,6 @@ function DashboardHeader() {
     const fetchHeaderData = async () => {
       try {
         const data = await dashboardService.getDashboardData();
-        const unread = data.alerts?.filter((a: any) => !a.read).length || 0;
-        setUnreadCount(unread);
         
         if (data.farms) {
           setFarms(data.farms);
@@ -210,8 +150,7 @@ function DashboardHeader() {
 
   const getPageTitle = () => {
     const route = location.pathname;
-    if (route === "/notifications") return "Notifications";
-    const navigationItems = getNavigationItems(t, 'hybrid');
+    const navigationItems = getNavigationItems();
     const item = navigationItems.find((i) => i.route === route);
     return item?.label || "Dashboard";
   };
@@ -277,28 +216,8 @@ function DashboardHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Search Bar */}
-        <div className="hidden md:flex items-center relative w-[280px]">
-          <Input 
-            placeholder="Search anything..." 
-            className="w-full rounded-full bg-gray-50/50 border-gray-200 pl-4 pr-10 h-10 text-sm focus-visible:ring-1 focus-visible:ring-green-500" 
-          />
-          <Search className="absolute right-3 h-4 w-4 text-gray-400" />
-        </div>
-
         {/* Icons & Profile */}
         <div className="flex items-center gap-4 border-l border-gray-100 pl-4">
-          <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 rounded-full h-10 w-10" asChild>
-            <NavLink to="/notifications">
-              <Bell className="h-[22px] w-[22px] text-gray-600" />
-              {unreadCount > 0 && (
-                <Badge className="absolute top-1.5 right-1.5 h-[18px] w-[18px] flex items-center justify-center p-0 bg-[#198754] text-white rounded-full text-[10px] border-2 border-white font-bold animate-in zoom-in">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </Badge>
-              )}
-            </NavLink>
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2.5 hover:bg-gray-50 rounded-full py-1.5 px-2 h-auto">
