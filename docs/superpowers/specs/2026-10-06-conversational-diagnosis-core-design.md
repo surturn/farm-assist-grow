@@ -56,27 +56,28 @@ for the agent changes control flow, not what the farmer can be told.
 
 ## 2. Supported crops and labels
 
-Tomato, potato, pepper, cashew and coffee. The closed label list lives in one file,
-`packages/ai/kb/labels.json`, keyed by crop:
+The label list already exists: `packages/ai/class-manifest.json` (`v1.1-2026-09-28`, frozen),
+from the [Phase 1 class-scope amendment](./2026-09-28-phase1-v1-class-scope-and-data-pipeline.md).
+It is the only source of label names. The classifier's output schema, the checker, the KB and the
+eval all read it. No second label file is created.
 
-| Crop | Labels | Source |
-|---|---|---|
-| Tomato | Bacterial_Spot, Early_Blight, Healthy, Late_Blight, Leaf_Mold, Mosaic_Virus, Septoria_Leaf_Spot, Target_Spot, Yellow_Leaf_Curl_Virus | existing merged dataset |
-| Potato | Early_Blight, Healthy, Late_Blight | existing |
-| Pepper | Bacterial_Spot, Healthy | existing |
-| Cashew | Anthracnose, Gummosis, Healthy, Leaf_Miner, Red_Rust | existing |
-| Coffee | Cercospora, Phoma, Rust, Healthy*, Leaf_Miner* | `AImodel/external/JMuBEN` |
+| Crop | Classes |
+|---|---|
+| Coffee | Cercospora Leaf Spot, Leaf Miner, Phoma, Rust, Healthy |
+| Tomato | Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Mosaic Virus, Septoria Leaf Spot, Target Spot, Yellow Leaf Curl Virus, Healthy |
+| Pepper | Anthracnose, Bacterial Spot, Mosaic Virus, Healthy |
+| Bean | Angular Leaf Spot, Anthracnose, Rust, Healthy |
+| Potato | Early Blight, Late Blight, Healthy |
+| Cashew | Anthracnose, Gummosis, Leaf Miner, Red Rust, Healthy |
 
-\* The local JMuBEN copy has no Healthy or Leaf_Miner folders; JMuBEN2 has both. The labels
-exist so that the OpenAI classifier and the eval can use them. Local training needs JMuBEN2.
+That is 30 classes across 6 crops. Maize and cassava are excluded (`excludedCrops`).
+
+Avocado and mango are listed under `notTrained`, so they are always answered "not sure". The
+manifest's `abstention` rules return `crop_not_supported` or `unknown_crop` for them.
 
 **Coffee Berry Disease** is Kenya's most damaging coffee disease, but it shows on berries, not
-leaves, and no leaf dataset covers it. It is left out of the label list and listed as an open
-question for the agronomist. Until it is resolved, a berry photo goes to the rules as low
-confidence and gets flagged for review.
-
-`labels.json` is the only source of label names. The classifier's output schema, the checker,
-the KB and the eval all read it.
+leaves, and no leaf dataset covers it. It is not in the manifest and is an open question for the
+agronomist. A berry photo falls through to the abstention rules and is flagged for review.
 
 ## 3. Architecture
 
@@ -237,11 +238,10 @@ The checker runs at two points.
 
 **After the classifier**, inside `classify_image`:
 - Validate the output with zod against the schema.
-- `crop` must be in `labels.json`.
-- `label` must be in that crop's list.
+- `label` must be one of the manifest's `classes`, and its crop prefix must match `crop`.
 - `confidence` must be in [0, 1].
 - Any failure gives `band: 'rejected'`. The OpenAI classifier also uses `response_format`
-  `json_schema` with enums generated from `labels.json`, so the schema is enforced twice.
+  `json_schema` with enums generated from the manifest, so the schema is enforced twice.
 
 **Before sending** (faithfulness):
 - Every label, chemical name and dose in the outgoing reply must appear in this turn's tool
@@ -253,12 +253,20 @@ The checker runs at two points.
 
 ### 4.3 Rules (code, not prompt)
 
-- **Bands:** `confident` when confidence ≥ `T_HIGH`; `ask` when `T_LOW` ≤ confidence <
-  `T_HIGH` and the top-2 pair has a question; `uncertain` otherwise.
-  - Starting values are `T_HIGH = 0.85` and `T_LOW = 0.5`.
-  - These are replaced by values from the eval's calibration: `T_HIGH` becomes the lowest
-    confidence at which accuracy on the eval set is at least 90%.
-  - Both live in `packages/ai/rules.ts` as the calibration knob.
+- **Bands** extend the existing abstention policy (`packages/ai/abstention.ts`, mirrored in
+  Python and tested against `abstention-cases.json`). They do not replace it.
+  - When `decide()` answers, the band is `confident`.
+  - When it abstains with `low_confidence` or `healthy_ambiguous`, and the top-2 labels have a
+    sourced question pair, the band is `ask`.
+  - Every other abstention reason is `uncertain`, or `rejected` for the crop reasons.
+  - The thresholds stay in the manifest's `abstention` block: `minConfidence`, `minCropMass`
+    and `healthyGuard`, currently uncalibrated placeholders. The eval sets them (§5). They must
+    not be loosened before calibration.
+  - The new `ask` rule is added to both mirrors, with new cases in `abstention-cases.json`.
+- **Classifier output is a probability map** over the manifest's classes, because `decide()`
+  takes one. The OpenAI classifier returns its top-3 labels with scores, and every other class
+  is set to 0.
+  `// ponytail: OpenAI scores are not real probabilities; calibration in the eval is what makes the thresholds honest for it.`
 - **Healthy:** a `Healthy` label never comes with treatment advice.
 - **No sourced advice for a label:** the reply gives the label and says "ask your agrovet for treatment".
   It never falls back to model-written advice.
@@ -268,16 +276,18 @@ The checker runs at two points.
 
 ### 4.4 Knowledge base
 
-The KB lives in `packages/ai/kb/` and is versioned in git:
+The KB lives in `packages/ai/` and is versioned in git. It extends the existing
+`crop-knowledge.json`, which has 30 entries and is already checked against the manifest at boot
+by `assertKnowledgeMatchesManifest()`.
 
-- `labels.json`: the closed label list (§2).
-- `advice.json`: one entry per label, holding `description`, `cultural[]` (non-chemical
-  practices) and `chemical[]` in both `sw` and `en`.
+- `crop-knowledge.json`: one entry per class. The current free-text `treatment` string is
+  replaced by `description`, `cultural[]` (non-chemical practices) and `chemical[]`, in both
+  `sw` and `en`. The existing `reviewed` flag is renamed `agronomistReviewed`.
   - Every entry carries `source`: a URL and title for the publication it is drawn from.
   - Every chemical item also carries the product name, active ingredient, dose as published,
     and `pcpbReg`, its Kenya Pest Control Products Board registration number.
   - `agronomistReviewed` (a date or null) records post-launch audits. It does not gate anything.
-- `questions.json`: per look-alike label pair, 1–2 questions with up to 3 answer options, each
+- `questions.json` (new): per look-alike label pair, 1–2 questions with up to 3 answer options, each
   answer weighted toward one label of the pair, plus a `source`.
   - Example: Early_Blight vs Late_Blight is separated by timeline (when symptoms appeared
     relative to flowering and fruiting), rate of spread, and recent cool, wet weather.
@@ -290,7 +300,7 @@ entries from these, and the gate is enforced by the KB integrity test (§6), not
 
 | Content | Sent when |
 |---|---|
-| Disease name and description | the label is in `labels.json` |
+| Disease name and description | the label is in the manifest |
 | Cultural practices | the entry has a `source` |
 | Chemical product, active ingredient, dose | the entry has a `source` **and** the item has a `pcpbReg` |
 | Any field without provenance | never; the reply falls back to "ask your agrovet for treatment" |
@@ -299,7 +309,7 @@ entries from these, and the gate is enforced by the KB integrity test (§6), not
 The dose is reproduced exactly as published; it is never computed or converted. The agronomist
 becomes an auditor rather than a gate. They spot-check entries after launch, starting with the
 labels that get the most traffic (the tomato and potato blights), and review flagged scans. A
-correction they make goes into `advice.json` like any other change and is judged against the
+correction they make goes into `crop-knowledge.json` like any other change and is judged against the
 eval.
 
 ## 5. Faithful eval
@@ -308,10 +318,16 @@ eval.
 tools → orchestrator → checker. It does not call the classifier on its own.
 
 - **Data:**
-  - The test split of `AImodel/KenyaCropDisease` filtered to the 5 crops, plus a held-out slice
-    of JMuBEN.
-  - Up to 30 images per label, sampled with a fixed seed.
-  - The image list is committed as a manifest; the images are not committed.
+  - The **field sets** from the Phase 1 pipeline's committed `AImodel/splits/v1/` (PlantDoc and
+    the other sources that are never trained on). The leak-free grouped split guarantees that
+    these images are not in the training data.
+  - Up to 30 images per class, sampled with a fixed seed. The image list is committed; the
+    images are not.
+  - Classes with an empty field set (see the Phase 1 G9 gate) are reported as "not evaluated",
+    never as passing.
+  - The pipeline's `metrics.py` stays the single definition of accuracy and calibration for
+    both Python and this harness. The harness writes predictions in the format `metrics.py`
+    reads, and does not re-implement the metrics.
 - **Variants:** each image is run as the original and as a WhatsApp-like re-encode (longest side
   1600 px, JPEG quality 80, via `sharp`).
   - `// ponytail: simulated WhatsApp compression; calibrate by sending 20 real photos through a WhatsApp test number and comparing their bytes and accuracy with the simulation.`
@@ -319,7 +335,7 @@ tools → orchestrator → checker. It does not call the classifier on its own.
   true label. This tests whether the questions actually separate the look-alike pairs.
 - **Report** (`eval-report.json` plus a short markdown summary):
   - Per-label accuracy and confusion pairs.
-  - Calibration: reliability per band and ECE. The recommended `T_HIGH` and `T_LOW` come from
+  - Calibration: reliability per band and ECE. The recommended `minConfidence`, `minCropMass` and `healthyGuard` values come from
     this.
   - Abstention rate and abstention correctness (how many of the abstentions would have been
     wrong answers).
@@ -346,10 +362,10 @@ and Redis are faked.
 | Adapters | WhatsApp payload → `InboundMessage` for image, button, text, commands and unsupported types; `send` builds valid interactive payloads; the 24-hour window refusal |
 | Context filter | each rejection reason; a stale or forged button id; an opted-out channel |
 | Checker | an out-of-list label; a crop/label mismatch; malformed JSON; confidence out of range; faithfulness pass and fail |
-| Rules | band edges at exactly `T_HIGH` and `T_LOW`; Healthy gets no advice; label with no sourced advice |
+| Rules | each `ask`, `uncertain` and `rejected` mapping from `decide()` reasons, with new cases in `abstention-cases.json`; Healthy gets no advice; label with no sourced advice |
 | Tools | `classify_image` captures a scan on every path, including rejected; `get_farm_context` refuses another channel's farm; `ask_farmer` cap of 2 |
 | Orchestrator | every branch in §3.5 with a fake classifier; Redis key lost mid-conversation |
-| KB integrity | every label has an advice entry and appears in `labels.json`; every question pair refers to real labels; every answer option has a translation in both languages; **every advice entry and question has a `source`, and every chemical item has a `pcpbReg`** — otherwise the build fails |
+| KB integrity | extends `checkManifestAndKnowledge`: every class has an entry; every question pair refers to real labels; every answer option has a translation in both languages; **every advice entry and question has a `source`, and every chemical item has a `pcpbReg`** — otherwise the build fails |
 
 The `trace` stored on each Scan (a list of tool name, input summary and output summary) is
 written in Phase A as well, so the Phase B trajectory tests and the eval read one format.
@@ -369,7 +385,7 @@ written in Phase A as well, so the Phase B trajectory tests and the eval read on
    committed.
 7. Telegram adapter (Bot API webhook, inline keyboards). The core does not change.
 8. Phase B: the ReAct agent passes the §3.6 gate.
-9. Local model training (Local-First spec, updated for the 5-crop label list) passes the eval
+9. Local model training (Local-First spec and Phase 1 amendment; trains only when `TRAIN_READY=True`) passes the eval
    gate.
 
 ## 8. Risks

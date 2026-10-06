@@ -27,8 +27,8 @@ the conversation does not matter. The dashboard is a secondary surface for recor
 The channel-neutral conversation core and the low-confidence question flow are specified
 separately in the Conversational Diagnosis Core spec. This spec only clears the ground for it.
 
-**Supported crops:** tomato, potato, pepper, cashew and coffee. Cassava and maize are dropped,
-per the agronomist review.
+**Supported crops:** coffee, tomato, pepper, bean, potato and cashew: the 30 classes in
+`packages/ai/class-manifest.json`. Cassava and maize are dropped, per the agronomist review.
 
 It also removes duplicated data paths and redundant business logic found along the way.
 
@@ -171,7 +171,7 @@ WhatsApp:   inbound.worker ──(future milestone)──▶ diagnose(image) ─
   `confidence` or `treatment` from the client.
 - The scan is stored with the full training example defined in §4.1.
 - The `rateLimiter` middleware that guarded `/crops/analyze` moves onto `POST /scans`.
-- The `diagnose()` prompt is restricted to the five supported crops. A photo of any other crop
+- The `diagnose()` prompt is restricted to the crops in `class-manifest.json`. A photo of any other crop
   returns `diseaseName: "Unsupported crop"` with the identified `cropType`, and no treatment is
   given. These scans are still captured (§4.1) because they show which crop to support next.
 - Errors: `diagnose()` failures return 502 with a short message; the frontend shows a toast and
