@@ -119,6 +119,8 @@ function intentToEventType(kind: string): ChannelEventType {
       return 'message.audio';
     case 'message.text':
       return 'message.text';
+    case 'message.button':
+      return 'message.button';
     default:
       return 'message.unsupported';
   }

@@ -1,4 +1,4 @@
-import type { MetaMessage, MetaMediaMessage, MetaTextMessage } from './types';
+import type { MetaMessage, MetaMediaMessage, MetaTextMessage, MetaInteractiveMessage } from './types';
 
 /**
  * Classifies an inbound message into the handful of things the channel can
@@ -17,6 +17,7 @@ export type Intent =
   | { kind: 'message.image'; mediaId: string; mimeType: string; caption?: string }
   | { kind: 'message.audio'; mediaId: string; mimeType: string; isVoiceNote: boolean }
   | { kind: 'message.text'; body: string }
+  | { kind: 'message.button'; id: string; title: string }
   | { kind: 'message.unsupported'; type: string };
 
 const STOP_WORDS = new Set(['simama', 'stop', 'acha']);
@@ -62,6 +63,12 @@ export function routeIntent(message: MetaMessage): Intent {
       // Meta distinguishes a recorded voice note from an attached audio file.
       isVoiceNote: audio.voice === true,
     };
+  }
+
+  if (message.type === 'interactive') {
+    const i = (message as MetaInteractiveMessage).interactive;
+    if (i?.type === 'button_reply' && 'button_reply' in i) return { kind: 'message.button', id: i.button_reply.id, title: i.button_reply.title };
+    return { kind: 'message.unsupported', type: 'interactive' };
   }
 
   return { kind: 'message.unsupported', type: message.type };

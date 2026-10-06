@@ -17,11 +17,19 @@ export interface MetaMediaMessage {
   id: string;
   timestamp: string;
   type: 'image' | 'audio' | 'video' | 'document' | 'sticker';
-  image?: { id: string; mime_type: string; sha256?: string; caption?: string };
+  image?: { id: string; mime_type: string; sha256?: string; caption?: string; file_size?: number };
   audio?: { id: string; mime_type: string; voice?: boolean };
   video?: { id: string; mime_type: string };
   document?: { id: string; mime_type: string };
   sticker?: { id: string; mime_type: string };
+}
+
+export interface MetaInteractiveMessage {
+  from: string;
+  id: string;
+  timestamp: string;
+  type: 'interactive';
+  interactive: { type: 'button_reply'; button_reply: { id: string; title: string } } | { type: string };
 }
 
 export interface MetaOtherMessage {
@@ -31,7 +39,7 @@ export interface MetaOtherMessage {
   type: string;
 }
 
-export type MetaMessage = MetaTextMessage | MetaMediaMessage | MetaOtherMessage;
+export type MetaMessage = MetaTextMessage | MetaMediaMessage | MetaInteractiveMessage | MetaOtherMessage;
 
 export interface MetaStatus {
   id: string;
