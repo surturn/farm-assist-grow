@@ -1,0 +1,53 @@
+{
+  "version": "v1.1-2026-09-28",
+  "frozen": true,
+  "notes": "Single source of truth for the crop-disease classifier. Read by AImodel/pipeline (split, verify, eval) and packages/ai (boot check, abstention). Changing this file changes the model contract: retrain, re-sync crop-knowledge.json, bump version.",
+  "excludedCrops": ["Maize", "Corn", "Cassava"],
+  "excludedTokens": ["maize", "corn", "cassava"],
+  "trainedCrops": ["Coffee", "Tomato", "Pepper", "Bean", "Potato", "Cashew"],
+  "classes": [
+    "Coffee___Cercospora_Leaf_Spot",
+    "Coffee___Healthy",
+    "Coffee___Leaf_Miner",
+    "Coffee___Phoma",
+    "Coffee___Rust",
+    "Tomato___Bacterial_Spot",
+    "Tomato___Early_Blight",
+    "Tomato___Healthy",
+    "Tomato___Late_Blight",
+    "Tomato___Leaf_Mold",
+    "Tomato___Mosaic_Virus",
+    "Tomato___Septoria_Leaf_Spot",
+    "Tomato___Target_Spot",
+    "Tomato___Yellow_Leaf_Curl_Virus",
+    "Pepper___Anthracnose",
+    "Pepper___Bacterial_Spot",
+    "Pepper___Healthy",
+    "Pepper___Mosaic_Virus",
+    "Bean___Angular_Leaf_Spot",
+    "Bean___Anthracnose",
+    "Bean___Healthy",
+    "Bean___Rust",
+    "Potato___Early_Blight",
+    "Potato___Healthy",
+    "Potato___Late_Blight",
+    "Cashew___Anthracnose",
+    "Cashew___Gummosis",
+    "Cashew___Healthy",
+    "Cashew___Leaf_Miner",
+    "Cashew___Red_Rust"
+  ],
+  "notTrained": {
+    "notes": "In product scope but no usable training data. Always answered 'not sure'. The model has no class for these, so a photo of them can only be caught by the abstention rules; the eval OOD probe sets measure how often that works. Mango deferred 2026-09-28: the only usable source (MangoLeafBD) is CC BY-NC 3.0, not usable in a commercial product.",
+    "crops": ["Avocado", "Mango"],
+    "labels": ["Mango___Anthracnose", "Mango___Powdery_Mildew", "Mango___Cercospora",
+               "Avocado___Anthracnose", "Avocado___Powdery_Mildew", "Avocado___Cercospora"]
+  },
+  "abstention": {
+    "calibrated": false,
+    "calibrationNote": "Placeholders, deliberately conservative. evaluate.py sets these from the field-photo confidence curve; until then they must not be loosened.",
+    "minConfidence": 0.85,
+    "minCropMass": 0.9,
+    "healthyGuard": 0.15
+  }
+}

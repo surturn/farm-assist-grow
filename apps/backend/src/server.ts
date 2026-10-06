@@ -1,9 +1,15 @@
 import app from './app';
 import { env, isWhatsAppConfigured } from './config/env';
 import { startInboundWorker } from './channels/whatsapp/inbound.worker';
+import { assertKnowledgeMatchesManifest } from '@farmassist/ai';
 
 const startServer = () => {
     const PORT = env.PORT || 5000;
+
+    // Fail the boot, not a farmer's scan: every classifier label must have a
+    // knowledge entry and no retired class (maize, cassava) may remain.
+    const manifest = assertKnowledgeMatchesManifest();
+    console.log(`Crop classes: ${manifest.classes.length} (${manifest.version})`);
 
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
