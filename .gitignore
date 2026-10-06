@@ -67,3 +67,7 @@ serviceAccountKey.json
 
 # Stray tool caches written into the repo root
 /Microsoft/
+
+# Local tooling output
+/graphify-out/
+/.claude/
