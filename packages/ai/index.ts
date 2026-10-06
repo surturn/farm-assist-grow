@@ -101,7 +101,8 @@ export const openaiVision = {
         const model = `openai:${aiModel}@${sha256(SYSTEM_PROMPT).slice(0, 8)}`;
         const cacheKey = `crop_analysis:${model}:${sha256(image)}`;
 
-        const cached = await redis.get(cacheKey);
+        // The cache is an optimisation: a Redis outage must not stop diagnosis.
+        const cached = await redis.get(cacheKey).catch(() => null);
         if (cached) return { analysis: JSON.parse(cached), model };
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -140,7 +141,7 @@ export const openaiVision = {
         }
 
         const ttl = process.env.AI_CACHE_TTL ? parseInt(process.env.AI_CACHE_TTL, 10) : 604800;
-        await redis.setex(cacheKey, ttl, JSON.stringify(analysis));
+        await redis.setex(cacheKey, ttl, JSON.stringify(analysis)).catch(() => undefined);
         return { analysis, model };
     },
 };

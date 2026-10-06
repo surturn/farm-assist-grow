@@ -9,7 +9,8 @@
         "start": "node dist/server.js",
         "test:integration": "tsx scripts/integration-test.ts",
         "test:whatsapp": "tsx scripts/whatsapp-inbound-test.ts",
-        "test:ai": "tsx scripts/ai-manifest-test.ts"
+        "test:ai": "tsx scripts/ai-manifest-test.ts",
+        "test:ai-cache": "tsx scripts/ai-cache-test.ts"
     },
     "keywords": [],
     "author": "",

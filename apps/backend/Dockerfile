@@ -29,7 +29,7 @@ ENV NODE_ENV=development
 EXPOSE 5000
 
 # Using tsx watch for hot module replacement in development
-CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --schema prisma/schema.prisma --accept-data-loss && exec ../../node_modules/.bin/tsx watch src/server.ts"]
+CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --schema prisma/schema.prisma && exec ../../node_modules/.bin/tsx watch src/server.ts"]
 
 # ----- PROD STAGE -----
 FROM base AS prod
@@ -41,4 +41,4 @@ ENV NODE_ENV=production
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --schema prisma/schema.prisma --accept-data-loss && exec ../../node_modules/.bin/tsx src/server.ts"]
+CMD ["sh", "-c", "../../node_modules/.bin/prisma db push --schema prisma/schema.prisma && exec ../../node_modules/.bin/tsx src/server.ts"]
