@@ -156,6 +156,12 @@ Dashboard:  Scan.tsx ──POST /scans {imageBase64, farmId}──▶ scan.contr
 WhatsApp:   inbound.worker ──(future milestone)──▶ diagnose(image) ──▶ scanService.createScanForMessage
 ```
 
+> **Transitional.** The [Conversational Diagnosis Core](./2026-10-06-conversational-diagnosis-core-design.md)
+> replaces `diagnose()` with the `classify_image` tool, which returns a closed label only. In that
+> design all advice comes from the agronomist knowledge base. The model-written advice fields
+> described below exist only until step 3 of that spec, when `POST /scans` moves onto the core's
+> tools. The capture contract in §4.1 does not change.
+
 - `packages/ai` exports `diagnose(imageBase64)`: the existing OpenAI vision call with its Redis
   cache and 10MB size check, renamed from `analyzeCropImage`. The unused `farmId` parameter is
   removed.
