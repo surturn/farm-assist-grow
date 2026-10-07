@@ -33,6 +33,7 @@ test('a chemical without a PCPB registration fails', () => {
 
 test('chemicals on an unsourced entry fail', () => {
   const k = fresh();
+  k['Tomato___Late_Blight'].source = null;
   k['Tomato___Late_Blight'].chemicals = [{ activeIngredient: 'Mancozeb', pcpbReg: 'PCPB(CR)0001' }];
   assert.match(checkManifestAndKnowledge(manifest, k).join('\n'), /chemicals need a source/);
 });

@@ -3,7 +3,7 @@
   "pairs": [
     {
       "labels": ["Tomato___Early_Blight", "Tomato___Late_Blight"],
-      "source": null,
+      "source": { "title": "Recognizing tomato blights (UMass Amherst Extension Vegetable Program)", "url": "https://www.umass.edu/agriculture-food-environment/vegetable/fact-sheets/recognizing-tomato-blights" },
       "questions": [
         { "id": "spot_start", "text": { "en": "Where did the spots start?", "sw": "Madoa yalianza wapi?" },
           "options": [
@@ -14,36 +14,30 @@
         { "id": "weather", "text": { "en": "What was the weather this past week?", "sw": "Hali ya hewa ilikuwaje wiki hii?" },
           "options": [
             { "id": "cool_wet", "text": { "en": "Cool and wet", "sw": "Baridi na mvua" }, "favours": "Tomato___Late_Blight", "weight": 0.75 },
-            { "id": "warm_dry", "text": { "en": "Warm and dry", "sw": "Joto na ukavu" }, "favours": "Tomato___Early_Blight", "weight": 0.65 },
+            { "id": "warm_dry", "text": { "en": "Warm and dry", "sw": "Joto na ukavu" }, "favours": null, "weight": 0.5 },
             { "id": "unsure", "text": { "en": "Not sure", "sw": "Sijui" }, "favours": null, "weight": 0.5 }
           ] }
       ]
     },
     {
       "labels": ["Potato___Early_Blight", "Potato___Late_Blight"],
-      "source": null,
+      "source": { "title": "Potato late blight, Plantwise factsheet for farmers KE019En (CABI, created in Kenya)", "url": "https://factsheetadmin.plantwise.org/Uploads/PDFs/20117800552.pdf" },
       "questions": [
-        { "id": "spot_start", "text": { "en": "Where did the spots start?", "sw": "Madoa yalianza wapi?" },
+        { "id": "spot_rings", "text": { "en": "Do the spots have rings inside?", "sw": "Madoa yana pete ndani?" },
           "options": [
-            { "id": "lower", "text": { "en": "Old lower leaves", "sw": "Majani ya chini" }, "favours": "Potato___Early_Blight", "weight": 0.8 },
-            { "id": "upper", "text": { "en": "Young upper leaves", "sw": "Majani ya juu" }, "favours": "Potato___Late_Blight", "weight": 0.7 },
-            { "id": "unsure", "text": { "en": "Not sure", "sw": "Sijui" }, "favours": null, "weight": 0.5 }
-          ] },
-        { "id": "weather", "text": { "en": "What was the weather this past week?", "sw": "Hali ya hewa ilikuwaje wiki hii?" },
-          "options": [
-            { "id": "cool_wet", "text": { "en": "Cool and wet", "sw": "Baridi na mvua" }, "favours": "Potato___Late_Blight", "weight": 0.75 },
-            { "id": "warm_dry", "text": { "en": "Warm and dry", "sw": "Joto na ukavu" }, "favours": "Potato___Early_Blight", "weight": 0.65 },
+            { "id": "rings", "text": { "en": "Yes, rings", "sw": "Ndiyo, pete" }, "favours": "Potato___Early_Blight", "weight": 0.8 },
+            { "id": "no_rings", "text": { "en": "No rings", "sw": "Hakuna pete" }, "favours": "Potato___Late_Blight", "weight": 0.75 },
             { "id": "unsure", "text": { "en": "Not sure", "sw": "Sijui" }, "favours": null, "weight": 0.5 }
           ] }
       ]
     },
     {
       "labels": ["Tomato___Septoria_Leaf_Spot", "Tomato___Early_Blight"],
-      "source": null,
+      "source": { "title": "Recognizing tomato blights (UMass Amherst Extension Vegetable Program)", "url": "https://www.umass.edu/agriculture-food-environment/vegetable/fact-sheets/recognizing-tomato-blights" },
       "questions": [
         { "id": "spot_look", "text": { "en": "What do the spots look like?", "sw": "Madoa yanaonekanaje?" },
           "options": [
-            { "id": "small_pale", "text": { "en": "Many, pale centres", "sw": "Mengi, kati hafifu" }, "favours": "Tomato___Septoria_Leaf_Spot", "weight": 0.8 },
+            { "id": "small_pale", "text": { "en": "Small, grey centres", "sw": "Madogo, kati kijivu" }, "favours": "Tomato___Septoria_Leaf_Spot", "weight": 0.8 },
             { "id": "rings", "text": { "en": "Rings like a target", "sw": "Pete kama shabaha" }, "favours": "Tomato___Early_Blight", "weight": 0.8 },
             { "id": "unsure", "text": { "en": "Not sure", "sw": "Sijui" }, "favours": null, "weight": 0.5 }
           ] }
