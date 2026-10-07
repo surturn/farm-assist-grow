@@ -222,7 +222,7 @@ function ScanRowView({ scan, onChange }: { scan: ScanRow; onChange: () => void }
             <Check className="size-3.5" aria-hidden />
             {scan.verifiedLabel === scan.diseaseName ? "Confirmed" : `Corrected: ${scan.verifiedLabel}`}
           </span>
-        ) : kind === "unsupported" ? (
+        ) : kind !== "disease" && kind !== "healthy" ? (
           <span className="text-muted-foreground">—</span>
         ) : correcting ? (
           <form
