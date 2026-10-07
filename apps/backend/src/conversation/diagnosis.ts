@@ -1,5 +1,5 @@
 import { decide } from '@farmassist/ai/abstention';
-import { getAdvice, type Lang } from '@farmassist/ai/advice';
+import { getAdvice, type AdviceView, type Lang } from '@farmassist/ai/advice';
 import { checkClassifierOutput } from '@farmassist/ai/checker';
 import { applyAnswer, nextQuestion, pairFor, type QuestionPair } from '@farmassist/ai/questions';
 import { bandFor } from '@farmassist/ai/rules';
@@ -96,4 +96,18 @@ export async function answerQuestion(deps: DiagnosisDeps, owner: Owner, scanId: 
   const { step, write } = resolve(deps, scanId, probs, scan.crop, answers.map((x) => x.questionId), lang, trace);
   await deps.updateScan(scanId, { ...write, analysis: { crop: scan.crop, probs, pendingQuestion: step.question?.id ?? null }, answers, trace });
   return step;
+}
+
+/**
+ * Advice behind a details button. The label is re-derived from the scan's
+ * stored probabilities, so the button carries only the scan id; a scan that
+ * is not resolved, or belongs to someone else, is stale.
+ */
+export async function getDetails(deps: DiagnosisDeps, owner: Owner, scanId: string, lang: Lang): Promise<AdviceView> {
+  const scan = await deps.getScan(scanId);
+  const owns = scan && ((owner.userId && scan.userId === owner.userId) || (owner.channelId && scan.channelId === owner.channelId));
+  if (!scan || !owns || !scan.probs || scan.pendingQuestion) throw new StaleAnswerError('no resolved diagnosis');
+  const { answer } = decide(scan.probs, deps.manifest);
+  if (!answer) throw new StaleAnswerError('scan was not confident');
+  return getAdvice(answer, lang, deps.knowledge);
 }

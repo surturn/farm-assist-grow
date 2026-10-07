@@ -124,7 +124,15 @@
       "prevention": [
         "Panda aina zinazostahimili kutu: Ruiru 11 inastahimili sana na Batian inastahimili kiasi",
         "Pogoa miti ya kahawa mara kwa mara ili hewa ipite kati ya matawi"
-      ]
+      ],
+      "short": {
+        "name": "kutu ya majani",
+        "action": "Nyunyizia katikati ya Oktoba kabla ya mvua fupi, na tena wiki tatu baadaye. Muulize muuzaji wa pembejeo au chama chako dawa ya kutu iliyosajiliwa."
+      }
+    },
+    "short": {
+      "name": "leaf rust",
+      "action": "Spray in mid-October before the short rains, and again three weeks later. Ask your agrovet or cooperative for a registered rust spray."
     }
   },
   "Tomato___Bacterial_Spot": {
@@ -196,7 +204,15 @@
         "Weka miti ya kushikilia mimea, ondoa magugu na uache nafasi ili hewa ipite",
         "Subiri angalau miaka miwili kabla ya kupanda nyanya au mazao jamii yake mahali pale pale",
         "Tumia mbegu kutoka kwa mimea yenye afya pekee"
-      ]
+      ],
+      "short": {
+        "name": "baa la mapema",
+        "action": "Chuma majani yenye madoa na uyazike au uyachome. Weka majani makavu. Ugonjwa ukiendelea kuenea, muulize muuzaji wa pembejeo dawa iliyosajiliwa Kenya."
+      }
+    },
+    "short": {
+      "name": "early blight",
+      "action": "Pick off leaves with spots and bury or burn them. Keep leaves dry. If it keeps spreading, ask your agrovet for a spray registered in Kenya."
     }
   },
   "Tomato___Healthy": {
@@ -260,7 +276,15 @@
         "Weka majani makavu: mwagilia chini ya mmea, asubuhi",
         "Weka miti ya kushikilia mimea na uiache nafasi ili hewa ipite kati yake",
         "Ondoa viazi vinavyoota vyenyewe na uharibu mabaki ya mazao mwishoni mwa msimu"
-      ]
+      ],
+      "short": {
+        "name": "baa chelewa",
+        "action": "Ng'oa mimea iliyougua na uiharibu ili ugonjwa usienee. Weka majani makavu, na umuulize muuzaji wa pembejeo dawa ya baa iliyosajiliwa Kenya."
+      }
+    },
+    "short": {
+      "name": "late blight",
+      "action": "Pull out sick plants and destroy them so it does not spread. Keep leaves dry, and ask your agrovet for a blight spray registered in Kenya."
     }
   },
   "Tomato___Leaf_Mold": {
@@ -352,7 +376,15 @@
         "Weka matandazo ya kutosha ili udongo usirukie majani",
         "Mwagilia chini ya mmea na uweke majani makavu",
         "Pogoa matawi ya majani ya chini kabisa mimea ikishaimarika na kuanza kuzaa"
-      ]
+      ],
+      "short": {
+        "name": "madoa ya majani ya Septoria",
+        "action": "Chuma majani yenye madoa na uweke majani makavu. Ikiwa ni mbaya kila mwaka, muulize muuzaji wa pembejeo dawa iliyosajiliwa Kenya na uitumie mapema."
+      }
+    },
+    "short": {
+      "name": "Septoria leaf spot",
+      "action": "Pick off leaves with spots and keep leaves dry. If it is bad every year, ask your agrovet for a spray registered in Kenya and use it early."
     }
   },
   "Tomato___Target_Spot": {
@@ -620,7 +652,15 @@
         "Weka mbolea ipasavyo ili mimea ikue kwa nguvu",
         "Epuka kumwagilia juu ya majani ili yabaki makavu",
         "Ondoa au zika mimea iliyoambukizwa baada ya kuvuna"
-      ]
+      ],
+      "short": {
+        "name": "baa la mapema",
+        "action": "Ondoa majani yaliyougua na uyapeleke mbali na shamba. Weka majani makavu. Ugonjwa ukiendelea kuenea, muulize muuzaji wa pembejeo dawa iliyosajiliwa Kenya."
+      }
+    },
+    "short": {
+      "name": "early blight",
+      "action": "Remove sick leaves and take them away from the field. Keep leaves dry. If it keeps spreading, ask your agrovet for a spray registered in Kenya."
     }
   },
   "Potato___Healthy": {
@@ -682,7 +722,15 @@
         "Pandisha udongo kando ya mistari ili kulinda viazi",
         "Ondoa na uharibu mashina na majani yote angalau wiki mbili kabla ya kuvuna",
         "Panda aina zenye ustahimilivu kiasi, kama Tigoni"
-      ]
+      ],
+      "short": {
+        "name": "baa chelewa",
+        "action": "Nyunyizia mara unapouona, kwa dawa ya baa iliyosajiliwa Kenya kutoka kwa muuzaji wa pembejeo. Rudia kila wiki mbili wakati wa mvua."
+      }
+    },
+    "short": {
+      "name": "late blight",
+      "action": "Spray as soon as you see it, using a blight spray registered in Kenya from your agrovet. Repeat every two weeks in wet weather."
     }
   },
   "Cashew___Anthracnose": {

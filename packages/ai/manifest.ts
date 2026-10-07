@@ -23,11 +23,14 @@ export interface ClassManifest {
 
 export interface KnowledgeSource { title: string; url: string }
 export interface Chemical { activeIngredient: string; pcpbReg: string }
-export interface KnowledgeTranslation { diseaseName: string; symptoms: string[]; treatment: string; prevention: string[] }
+/** The farmer's first reply: plain name and one or two plain sentences of action. */
+export interface KnowledgeShort { name: string; action: string }
+export interface KnowledgeTranslation { diseaseName: string; symptoms: string[]; treatment: string; prevention: string[]; short?: KnowledgeShort }
 export interface KnowledgeEntry {
     diseaseName: string; cropType: string; symptoms: string[]; possibleCauses: string[];
     treatment: string; prevention: string[]; reviewed: boolean;
     source: KnowledgeSource | null; chemicals: Chemical[]; sw: KnowledgeTranslation | null;
+    short?: KnowledgeShort;
 }
 
 const KNOWLEDGE_FIELDS = ['diseaseName', 'cropType', 'symptoms', 'possibleCauses', 'treatment', 'prevention', 'reviewed', 'source', 'chemicals', 'sw'];
@@ -72,7 +75,7 @@ export const checkManifestAndKnowledge = (
         if (entry.cropType !== cropOf(c)) errors.push(`${c}: cropType ${String(entry.cropType)} != ${cropOf(c)}`);
         if ('severity' in entry) errors.push(`${c}: severity must not be stored (model does not assess it)`);
         const e = entry as unknown as KnowledgeEntry;
-        const text = JSON.stringify([e.symptoms, e.possibleCauses, e.treatment, e.prevention, e.sw, e.chemicals]);
+        const text = JSON.stringify([e.symptoms, e.possibleCauses, e.treatment, e.prevention, e.sw, e.chemicals, e.short]);
         const m = DOSAGE_RE.exec(text);
         if (m) errors.push(`${c}: looks like a dosage (${m[0]}); defer quantities to extension services`);
         const chemicals = Array.isArray(e.chemicals) ? e.chemicals : [];
@@ -82,6 +85,10 @@ export const checkManifestAndKnowledge = (
             const sw = e.sw;
             if (!sw || !sw.diseaseName?.trim() || !Array.isArray(sw.symptoms) || typeof sw.treatment !== 'string' || !Array.isArray(sw.prevention)) {
                 errors.push(`${c}: sourced entry needs a Swahili translation`);
+            }
+            const shortOk = (s: KnowledgeShort | undefined) => !!s?.name?.trim() && !!s?.action?.trim();
+            if (diseaseOf(c) !== 'Healthy' && (!shortOk(e.short) || !shortOk(sw?.short))) {
+                errors.push(`${c}: sourced entry needs a short name and action in English and Swahili`);
             }
         } else if (chemicals.length > 0) {
             errors.push(`${c}: chemicals need a source`);

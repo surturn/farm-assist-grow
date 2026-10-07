@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadClassManifest, loadKnowledge } from '@farmassist/ai/manifest';
 import type { QuestionPair } from '@farmassist/ai/questions';
-import { answerQuestion, startDiagnosis } from '../../src/conversation/diagnosis';
+import { answerQuestion, getDetails, startDiagnosis } from '../../src/conversation/diagnosis';
 import { DuplicateMessageError, StaleAnswerError, type DiagnosisDeps, type ScanState, type ScanWrite } from '../../src/conversation/types';
 
 const pair: QuestionPair = {
@@ -167,4 +167,19 @@ test('channel-owned scan: only that channel may answer', async () => {
   await assert.rejects(answerQuestion(deps, {}, s1.scanId, 'q1', 'lower', 'en'), StaleAnswerError);
   const s2 = await answerQuestion(deps, { channelId: 'c1' }, s1.scanId, 'q1', 'lower', 'en');
   assert.equal(s2.band, 'confident');
+});
+
+test('details: owner of a resolved scan gets the advice; others, pending and unresolved scans are stale', async () => {
+  const { deps } = fakeDeps(confidentRaw);
+  const step = await startDiagnosis(deps, { channelId: 'c1' }, img, 'en');
+  const advice = await getDetails(deps, { channelId: 'c1' }, step.scanId, 'en');
+  assert.equal(advice.label, 'Tomato___Late_Blight');
+  assert.ok(advice.treatment);
+  await assert.rejects(getDetails(deps, { channelId: 'c2' }, step.scanId, 'en'), StaleAnswerError);
+  await assert.rejects(getDetails(deps, { channelId: 'c1' }, 'nope', 'en'), StaleAnswerError);
+
+  const close = fakeDeps(closeRaw);
+  const asked = await startDiagnosis(close.deps, { channelId: 'c1' }, img, 'en');
+  assert.equal(asked.band, 'ask');
+  await assert.rejects(getDetails(close.deps, { channelId: 'c1' }, asked.scanId, 'en'), StaleAnswerError);
 });
