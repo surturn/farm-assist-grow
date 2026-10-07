@@ -1,4 +1,4 @@
-export type ScanStatusKind = "healthy" | "disease" | "unsupported";
+export type ScanStatusKind = "healthy" | "disease" | "unsupported" | "uncertain";
 
 interface ScanLike {
   diseaseName?: string | null;
@@ -9,6 +9,7 @@ interface ScanLike {
 export function scanStatus(scan: ScanLike): ScanStatusKind {
   const name = (scan.verifiedLabel || scan.diseaseName || "").trim();
   if (/^healthy$/i.test(name)) return "healthy";
-  if (/unsupported/i.test(name)) return "unsupported";
+  if (/^not sure$/i.test(name)) return "uncertain";
+  if (/unsupported|not a plant|unreadable/i.test(name)) return "unsupported";
   return "disease";
 }
