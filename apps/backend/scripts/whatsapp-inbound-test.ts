@@ -308,12 +308,21 @@ async function run(base: string) {
   nextRaw = { crop: 'Tomato', predictions: [{ label: 'Tomato___Late_Blight', score: 0.97 }] };
   sent.length = 0;
   await handleInboundJob(job('254700000910', 'wamid.conv.1', { type: 'image', image: { id: 'media-1', mime_type: 'image/jpeg' } }) as any);
-  check('first photo gets an English reply, then the language picker',
-    sent.length === 2 && sent[0].type === 'text' && /sure\./.test(sent[0].text.body)
-      && sent[1].type === 'interactive' && sent[1].interactive.action.buttons.map((b: any) => b.reply.id).join() === 'lang:en,lang:sw',
-    JSON.stringify(sent));
+  const ids = (m: any) => m?.interactive?.action?.buttons?.map((b: any) => b.reply.id).join() ?? '';
   const conf = await prisma.scan.findFirst({ where: { waMessageId: 'wamid.conv.1' } });
+  check('first photo gets a short English reply with details buttons, then the language picker',
+    sent.length === 2 && /^Your Tomato has late blight \(97% sure\)\./.test(sent[0]?.interactive?.body?.text ?? '')
+      && ids(sent[0]) === `d:${conf?.id}:more,d:${conf?.id}:prevent` && ids(sent[1]) === 'lang:en,lang:sw',
+    JSON.stringify(sent));
   check('WhatsApp scan captured with channel and model', !!conf?.channelId && conf?.model === 'stub@1' && !!conf?.imageUrl);
+
+  // Details buttons send the full KB text; another farmer's tap reveals nothing.
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.det.1', { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: `d:${conf?.id}:more`, title: 'More details' } } }) as any);
+  check('More details sends signs and the full action', sent.length === 1 && /Signs:\n• /.test(sent[0]?.text?.body ?? '') && /What to do: Check plants often/.test(sent[0]?.text?.body ?? ''), JSON.stringify(sent));
+  sent.length = 0;
+  await handleInboundJob(job('254700000911', 'wamid.det.2', { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: `d:${conf?.id}:prevent`, title: 'How to prevent' } } }) as any);
+  check("someone else's details tap is told it is no longer available", sent.length === 2 && /no longer available/.test(sent[0]?.text?.body ?? ''), JSON.stringify(sent));
 
   // Replayed image delivery → no extra send.
   sent.length = 0;
