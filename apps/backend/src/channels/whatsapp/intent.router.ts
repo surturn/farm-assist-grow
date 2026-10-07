@@ -67,7 +67,12 @@ export function routeIntent(message: MetaMessage): Intent {
 
   if (message.type === 'interactive') {
     const i = (message as MetaInteractiveMessage).interactive;
-    if (i?.type === 'button_reply' && 'button_reply' in i) return { kind: 'message.button', id: i.button_reply.id, title: i.button_reply.title };
+    if (i?.type === 'button_reply' && 'button_reply' in i) {
+      const { id, title } = i.button_reply;
+      // Language picker buttons carry `lang:<code>` (see languagePicker).
+      if (id.startsWith('lang:')) return { kind: 'command.language', language: LANGUAGE_CODES[id.slice(5)] };
+      return { kind: 'message.button', id, title };
+    }
     return { kind: 'message.unsupported', type: 'interactive' };
   }
 

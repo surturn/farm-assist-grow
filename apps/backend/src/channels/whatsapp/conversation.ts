@@ -9,10 +9,25 @@ import { downloadMedia, MediaTooLargeError } from './graph';
 import type { Intent } from './intent.router';
 import { sendMessages } from './sender';
 import { WORKER_VERSION } from './version';
+import { setLanguage } from '../../services/farmer.service';
 
 type Channel = Parameters<typeof sendMessages>[0] & { userId: string | null; language: string; optedOut: boolean };
 
-const langOf = (c: Channel): Lang => (c.language === 'en' ? 'en' : 'sw');
+const langOf = (c: Channel): Lang => (c.language === 'sw' ? 'sw' : 'en');
+
+/** Bilingual on purpose: the farmer may not read the language we default to. */
+export const languagePicker: OutboundMessage = {
+  text: 'Choose your language / Chagua lugha yako',
+  buttons: [{ id: 'lang:en', title: 'English' }, { id: 'lang:sw', title: 'Kiswahili' }],
+};
+
+/** LANGUAGE / LUGHA on its own shows the picker; with a known language, or a picker tap, it switches. */
+export async function handleLanguage(channel: Channel, language: string | undefined): Promise<void> {
+  if (channel.optedOut) return;
+  if (language !== 'en' && language !== 'sw') return void (await sendMessages(channel, [languagePicker]));
+  await setLanguage(channel.id, language);
+  await sendMessages(channel, [{ text: t('language.set', language) }]);
+}
 
 export async function handleConversation(channel: Channel, intent: Intent, waMessageId: string): Promise<void> {
   if (channel.optedOut) return;

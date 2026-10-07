@@ -141,7 +141,7 @@ model FarmerChannel {
   id       String  @id @default(uuid())
   phone    String  @unique // E.164, no spaces or punctuation
   userId   String? @unique // null until the farmer completes signup
-  language String  @default("sw")
+  language String  @default("en")
 
   // Four digits, hashed. Deliberately separate from the account password:
   // household phones are shared, and a PIN in chat history must not reach

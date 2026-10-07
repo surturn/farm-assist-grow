@@ -285,6 +285,8 @@ async function run(base: string) {
 
   const sw = routeIntent({ from: 'x', id: 'x', timestamp: '1', type: 'text', text: { body: 'LUGHA English' } });
   check('intent: "LUGHA English" selects en', sw.kind === 'command.language' && sw.language === 'en', `got=${JSON.stringify(sw)}`);
+  const tap = routeIntent({ from: 'x', id: 'x', timestamp: '1', type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: 'lang:sw', title: 'Kiswahili' } } } as any);
+  check('intent: language picker tap selects sw', tap.kind === 'command.language' && tap.language === 'sw', `got=${JSON.stringify(tap)}`);
 
   const notCommand = routeIntent({ from: 'x', id: 'x', timestamp: '1', type: 'text', text: { body: 'nimepanda mahindi leo asubuhi' } });
   check('a sentence is not mistaken for a command', notCommand.kind === 'message.text');
@@ -306,7 +308,10 @@ async function run(base: string) {
   nextRaw = { crop: 'Tomato', predictions: [{ label: 'Tomato___Late_Blight', score: 0.97 }] };
   sent.length = 0;
   await handleInboundJob(job('254700000910', 'wamid.conv.1', { type: 'image', image: { id: 'media-1', mime_type: 'image/jpeg' } }) as any);
-  check('photo gets one reply', sent.length === 1 && sent[0].type === 'text', JSON.stringify(sent));
+  check('first photo gets an English reply, then the language picker',
+    sent.length === 2 && sent[0].type === 'text' && /sure\./.test(sent[0].text.body)
+      && sent[1].type === 'interactive' && sent[1].interactive.action.buttons.map((b: any) => b.reply.id).join() === 'lang:en,lang:sw',
+    JSON.stringify(sent));
   const conf = await prisma.scan.findFirst({ where: { waMessageId: 'wamid.conv.1' } });
   check('WhatsApp scan captured with channel and model', !!conf?.channelId && conf?.model === 'stub@1' && !!conf?.imageUrl);
 
@@ -346,6 +351,18 @@ async function run(base: string) {
   sent.length = 0;
   await handleInboundJob(job('254700000910', 'wamid.conv.6', { type: 'text', text: { body: 'habari' } }) as any);
   check('free text gets the help reply', /leaf|jani/.test(JSON.stringify(sent)));
+
+  // Language: LUGHA alone shows the picker; a tap switches and confirms in the new language.
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.lang.1', { type: 'text', text: { body: 'LUGHA' } }) as any);
+  check('LUGHA alone sends the language picker', sent.length === 1 && sent[0].type === 'interactive', JSON.stringify(sent));
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.lang.2', { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: 'lang:sw', title: 'Kiswahili' } } }) as any);
+  const swChannel = await prisma.farmerChannel.findUnique({ where: { phone: '+254700000910' } });
+  check('picker tap stores Kiswahili and confirms in it', swChannel?.language === 'sw' && /Kiswahili/.test(sent[0]?.text?.body ?? ''), JSON.stringify(sent));
+  sent.length = 0;
+  await handleInboundJob(job('254700000910', 'wamid.lang.3', { type: 'text', text: { body: 'habari' } }) as any);
+  check('later replies use Kiswahili', /jani/.test(JSON.stringify(sent)) && sent.length === 1, JSON.stringify(sent));
 
   // Opted out → silence.
   await handleInboundJob(job('254700000911', 'wamid.conv.7', { type: 'text', text: { body: 'STOP' } }) as any);

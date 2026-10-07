@@ -1,7 +1,8 @@
 import { Worker, Job } from 'bullmq';
 import { redis } from '@farmassist/redis';
 import { WHATSAPP_INBOUND_QUEUE } from './inbound.queue';
-import { handleConversation } from './conversation';
+import { handleConversation, handleLanguage, languagePicker } from './conversation';
+import { sendMessages } from './sender';
 import { WORKER_VERSION } from './version';
 import { routeIntent } from './intent.router';
 import type { InboundJob } from './types';
@@ -45,6 +46,9 @@ async function handleMessage(job: InboundJob): Promise<void> {
     return;
   }
 
+  // ponytail: two first messages arriving together can both see no channel and
+  // both offer the language picker; harmless, so no lock.
+  const firstContact = !(await farmerService.findChannelByPhone(message.from));
   // Creates the channel on first contact and advances lastInboundAt, which is
   // what reopens the 24-hour service window.
   const channel = await farmerService.touchChannel(message.from);
@@ -77,11 +81,14 @@ async function handleMessage(job: InboundJob): Promise<void> {
       return;
 
     case 'command.language':
-      if (intent.language) await farmerService.setLanguage(channel.id, intent.language);
+      await handleLanguage(channel, intent.language);
       return;
 
     default:
       await handleConversation(channel, intent, message.id);
+      // Replies default to English; a new farmer is offered Kiswahili once,
+      // after their first answer.
+      if (firstContact && !channel.optedOut) await sendMessages(channel, [languagePicker]);
       return;
   }
 }

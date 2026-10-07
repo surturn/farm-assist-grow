@@ -23,7 +23,11 @@ export const CATALOG = {
   'reject.unsupported': { en: "I can't diagnose this crop yet. I cover {crops}.", sw: 'Bado siwezi kutambua zao hili. Ninashughulikia {crops}.' },
   'reject.not_plant': { en: "I couldn't see a plant. Send a close photo of one leaf.", sw: 'Sikuona mmea. Tuma picha ya karibu ya jani moja.' },
   'reject.unreadable': { en: "I couldn't read that photo. Try another, in daylight.", sw: 'Sikuweza kusoma picha hiyo. Jaribu nyingine, mchana.' },
-  help: { en: "Send a photo of one sick leaf and I'll tell you what it is.", sw: 'Tuma picha ya jani moja lililo na ugonjwa nami nitakuambia ni nini.' },
+  help: {
+    en: "Send a photo of one sick leaf and I'll tell you what it is. Send LANGUAGE to change language.",
+    sw: 'Tuma picha ya jani moja lililo na ugonjwa nami nitakuambia ni nini. Tuma LUGHA kubadilisha lugha.',
+  },
+  'language.set': { en: 'I will reply in English.', sw: 'Nitajibu kwa Kiswahili.' },
   'error.retry': { en: 'Something went wrong. Please send the photo again.', sw: 'Kuna hitilafu. Tafadhali tuma picha tena.' },
   'answer.stale': { en: 'That question has expired. Send the photo again.', sw: 'Swali hilo limepitwa na wakati. Tuma picha tena.' },
 } as const;
