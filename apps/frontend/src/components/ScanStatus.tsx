@@ -6,12 +6,14 @@ const LABELS: Record<ScanStatusKind, string> = {
   healthy: "Healthy",
   disease: "Disease",
   unsupported: "Unsupported",
+  uncertain: "Not sure",
 };
 
 const STYLES: Record<ScanStatusKind, string> = {
   healthy: "bg-status-healthy-bg text-status-healthy",
   disease: "bg-status-disease-bg text-status-disease",
   unsupported: "bg-status-neutral-bg text-status-neutral",
+  uncertain: "bg-status-neutral-bg text-status-neutral",
 };
 
 export function StatusBadge({ kind, className }: { kind: ScanStatusKind; className?: string }) {

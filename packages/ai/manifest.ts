@@ -21,17 +21,16 @@ export interface ClassManifest {
     abstention: { calibrated: boolean; minConfidence: number; minCropMass: number; healthyGuard: number };
 }
 
+export interface KnowledgeSource { title: string; url: string }
+export interface Chemical { activeIngredient: string; pcpbReg: string }
+export interface KnowledgeTranslation { diseaseName: string; symptoms: string[]; treatment: string; prevention: string[] }
 export interface KnowledgeEntry {
-    diseaseName: string;
-    cropType: string;
-    symptoms: string[];
-    possibleCauses: string[];
-    treatment: string;
-    prevention: string[];
-    reviewed: boolean;
+    diseaseName: string; cropType: string; symptoms: string[]; possibleCauses: string[];
+    treatment: string; prevention: string[]; reviewed: boolean;
+    source: KnowledgeSource | null; chemicals: Chemical[]; sw: KnowledgeTranslation | null;
 }
 
-const KNOWLEDGE_FIELDS = ['diseaseName', 'cropType', 'symptoms', 'possibleCauses', 'treatment', 'prevention', 'reviewed'];
+const KNOWLEDGE_FIELDS = ['diseaseName', 'cropType', 'symptoms', 'possibleCauses', 'treatment', 'prevention', 'reviewed', 'source', 'chemicals', 'sw'];
 
 // Kept identical to DOSAGE_RE in AImodel/pipeline/manifest.py.
 const DOSAGE_RE =
@@ -72,9 +71,26 @@ export const checkManifestAndKnowledge = (
         for (const f of KNOWLEDGE_FIELDS) if (!(f in entry)) errors.push(`${c}: missing field ${f}`);
         if (entry.cropType !== cropOf(c)) errors.push(`${c}: cropType ${String(entry.cropType)} != ${cropOf(c)}`);
         if ('severity' in entry) errors.push(`${c}: severity must not be stored (model does not assess it)`);
-        const text = JSON.stringify([entry.symptoms, entry.possibleCauses, entry.treatment, entry.prevention]);
+        const e = entry as unknown as KnowledgeEntry;
+        const text = JSON.stringify([e.symptoms, e.possibleCauses, e.treatment, e.prevention, e.sw, e.chemicals]);
         const m = DOSAGE_RE.exec(text);
         if (m) errors.push(`${c}: looks like a dosage (${m[0]}); defer quantities to extension services`);
+        const chemicals = Array.isArray(e.chemicals) ? e.chemicals : [];
+        if (e.source) {
+            if (!e.source.title?.trim()) errors.push(`${c}: source needs a title`);
+            if (!/^https:\/\//.test(e.source.url ?? '')) errors.push(`${c}: source url must be https`);
+            const sw = e.sw;
+            if (!sw || !sw.diseaseName?.trim() || !Array.isArray(sw.symptoms) || typeof sw.treatment !== 'string' || !Array.isArray(sw.prevention)) {
+                errors.push(`${c}: sourced entry needs a Swahili translation`);
+            }
+        } else if (chemicals.length > 0) {
+            errors.push(`${c}: chemicals need a source`);
+        }
+        if (diseaseOf(c) === 'Healthy' && chemicals.length > 0) errors.push(`${c}: Healthy entry may not list chemicals`);
+        for (const chem of chemicals) {
+            if (!chem.activeIngredient?.trim()) errors.push(`${c}: chemical without an active ingredient`);
+            if (!chem.pcpbReg?.trim()) errors.push(`${c}: chemical ${chem.activeIngredient} has no PCPB registration`);
+        }
     }
     return errors;
 };

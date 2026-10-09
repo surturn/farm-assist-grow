@@ -14,6 +14,7 @@ export type ChannelEventType =
   | 'message.text'
   | 'message.image'
   | 'message.audio'
+  | 'message.button'
   | 'message.unsupported'
   | 'command.stop'
   | 'command.language'

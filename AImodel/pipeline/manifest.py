@@ -15,7 +15,8 @@ MANIFEST_PATH = REPO_ROOT / "packages" / "ai" / "class-manifest.json"
 KNOWLEDGE_PATH = REPO_ROOT / "packages" / "ai" / "crop-knowledge.json"
 
 LABEL_RE = re.compile(r"^[A-Z][A-Za-z]+___[A-Z][A-Za-z_]+$")
-KNOWLEDGE_FIELDS = ("diseaseName", "cropType", "symptoms", "possibleCauses", "treatment", "prevention", "reviewed")
+KNOWLEDGE_FIELDS = ("diseaseName", "cropType", "symptoms", "possibleCauses", "treatment", "prevention", "reviewed",
+                    "source", "chemicals", "sw")
 
 # Dosage / mixing-rate patterns. Knowledge text may name active ingredients but
 # must defer quantities to extension services.
@@ -141,7 +142,7 @@ def check_knowledge(manifest: Manifest, knowledge: dict) -> list[str]:
             errors.append(f"{label}: cropType {entry.get('cropType')!r} != {crop_of(label)!r}")
         if "severity" in entry:
             errors.append(f"{label}: severity must not be stored (model does not assess it)")
-        text = json.dumps({k: entry.get(k) for k in ("symptoms", "possibleCauses", "treatment", "prevention")})
+        text = json.dumps({k: entry.get(k) for k in ("symptoms", "possibleCauses", "treatment", "prevention", "sw", "chemicals")})
         m = DOSAGE_RE.search(text)
         if m:
             errors.append(f"{label}: looks like a dosage ({m.group(0)!r}); defer quantities to extension services")

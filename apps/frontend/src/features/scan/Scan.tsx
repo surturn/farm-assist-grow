@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { format } from "date-fns";
 import { Camera, Check, ImageUp } from "lucide-react";
 import { toast } from "sonner";
@@ -14,10 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFarm } from "@/contexts/FarmContext";
 import { processImageUpload } from "@/lib/image_upload_util";
 import { cn } from "@/lib/utils";
-import { scansService, type Analysis, type ScanRow } from "@/services/scans.service";
+import { scansService, type DiagnosisStep, type ScanRow } from "@/services/scans.service";
 
 const SUPPORTED_CROPS: string[] = manifest.trainedCrops;
-const list = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
 
 export default function Scan() {
   const { activeFarmId } = useFarm();
@@ -26,11 +25,15 @@ export default function Scan() {
   const [showCamera, setShowCamera] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<{ scan: ScanRow; analysis: Analysis } | null>(null);
+  const [result, setResult] = useState<DiagnosisStep | null>(null);
+  const [answering, setAnswering] = useState(false);
   const [history, setHistory] = useState<ScanRow[] | null>(null);
 
+  const refreshHistory = () => scansService.list(activeFarmId).then(setHistory).catch(() => setHistory([]));
+
   useEffect(() => {
-    scansService.list(activeFarmId).then(setHistory).catch(() => setHistory([]));
+    refreshHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFarmId]);
 
   const pickImage = (src: string) => {
@@ -59,9 +62,8 @@ export default function Scan() {
     setAnalyzing(true);
     setResult(null);
     try {
-      const data = await scansService.diagnose(image, activeFarmId);
-      setResult(data);
-      setHistory((prev) => [data.scan, ...(prev ?? [])]);
+      setResult(await scansService.diagnose(image, activeFarmId));
+      refreshHistory();
     } catch (error) {
       const message = isAxiosError(error) ? error.response?.data?.error : undefined;
       toast.error(message || "Diagnosis failed. Try again.");
@@ -70,10 +72,25 @@ export default function Scan() {
     }
   };
 
-  const onVerified = (scan: ScanRow) => {
-    setResult((r) => (r ? { ...r, scan } : r));
-    setHistory((prev) => (prev ?? []).map((s) => (s.id === scan.id ? scan : s)));
+  const onAnswer = async (questionId: string, optionId: string) => {
+    if (!result) return;
+    setAnswering(true);
+    try {
+      setResult(await scansService.answer(result.scanId, questionId, optionId));
+      refreshHistory();
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 409) {
+        toast.error("That question expired. Diagnose the photo again.");
+        setResult(null);
+      } else {
+        toast.error("Couldn't save your answer. Try again.");
+      }
+    } finally {
+      setAnswering(false);
+    }
   };
+
+  const onVerified = (scan: ScanRow) => setHistory((prev) => (prev ?? []).map((s) => (s.id === scan.id ? scan : s)));
 
   return (
     <DashboardLayout>
@@ -155,7 +172,10 @@ export default function Scan() {
               <p className="text-xs text-muted-foreground">Usually takes under 10 seconds.</p>
             </div>
           ) : result ? (
-            <Result key={result.scan.id} result={result} onVerified={onVerified} />
+            <div key={result.scanId}>
+              <StepView step={result} onAnswer={onAnswer} busy={answering} />
+              {result.band === "confident" && <Feedback scanId={result.scanId} onVerified={onVerified} />}
+            </div>
           ) : (
             <div className="flex h-full min-h-48 items-center justify-center text-center">
               <p className="max-w-xs text-sm text-muted-foreground">
@@ -171,35 +191,61 @@ export default function Scan() {
   );
 }
 
-function Result({ result, onVerified }: { result: { scan: ScanRow; analysis: Analysis }; onVerified: (s: ScanRow) => void }) {
-  const { scan, analysis: a } = result;
-  const kind = scanStatus(scan);
-  const confidence = Math.max(0, Math.min(100, Math.round(a.confidence ?? 0)));
-
-  if (kind === "unsupported") {
+function StepView({ step, onAnswer, busy }: { step: DiagnosisStep; onAnswer: (q: string, o: string) => void; busy: boolean }) {
+  if (step.band === "rejected") {
+    const text =
+      step.reason === "unsupported"
+        ? `We can't diagnose this crop yet. FarmAssist covers ${SUPPORTED_CROPS.join(", ")}.`
+        : step.reason === "not_plant"
+          ? "We couldn't see a plant. Try a close photo of one leaf."
+          : "We couldn't read that photo. Try another, in daylight.";
     return (
       <div>
         <StatusBadge kind="unsupported" />
-        <h2 className="mt-3 text-lg font-semibold">We can't diagnose this crop yet</h2>
+        <p className="mt-3 text-sm">{text}</p>
+      </div>
+    );
+  }
+
+  if (step.band === "uncertain") {
+    return (
+      <div>
+        <StatusBadge kind="uncertain" />
+        <h2 className="mt-3 text-lg font-semibold">Not sure yet</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {a.cropType && a.cropType !== "Unknown" ? `This looks like ${a.cropType}. ` : ""}
-          FarmAssist currently covers {SUPPORTED_CROPS.join(", ")}. Your photo is saved and helps us decide which crop to
-          add next.
+          We couldn't tell with enough confidence. An expert will look at your photo.
         </p>
       </div>
     );
   }
 
-  const sections = [
-    { title: "Symptoms", items: list(a.symptoms) },
-    { title: "Prevention", items: list(a.prevention) },
-  ];
+  if (step.band === "ask" && step.question) {
+    const q = step.question;
+    return (
+      <div>
+        <StatusBadge kind="uncertain" />
+        <h2 className="mt-3 text-lg font-semibold">{q.text}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">One detail helps tell two look-alike diseases apart.</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {q.options.map((o) => (
+            <Button key={o.id} variant="outline" disabled={busy} onClick={() => onAnswer(q.id, o.id)}>
+              {o.text}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const a = step.advice;
+  if (!a) return null;
+  const confidence = Math.max(0, Math.min(100, Math.round(step.confidence * 100)));
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge kind={kind} />
-        {a.cropType && <span className="text-xs text-muted-foreground">{a.cropType}</span>}
+        <StatusBadge kind={a.healthy ? "healthy" : "disease"} />
+        {step.crop && <span className="text-xs text-muted-foreground">{step.crop}</span>}
       </div>
       <h2 className="mt-2 text-lg font-semibold">{a.diseaseName}</h2>
 
@@ -214,44 +260,78 @@ function Result({ result, onVerified }: { result: { scan: ScanRow; analysis: Ana
       </div>
 
       <div className="mt-5 space-y-4 text-sm">
-        {typeof a.treatment === "string" && a.treatment && (
-          <div>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">What to do</h3>
-            <p className="mt-1 leading-relaxed">{a.treatment}</p>
-          </div>
+        {a.symptoms.length > 0 && (
+          <Block title="Signs">
+            <ul className="list-disc space-y-0.5 pl-5 leading-relaxed">
+              {a.symptoms.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+          </Block>
         )}
-        {sections.map(
-          (s) =>
-            s.items.length > 0 && (
-              <div key={s.title}>
-                <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{s.title}</h3>
-                <ul className="mt-1 list-disc space-y-0.5 pl-5 leading-relaxed">
-                  {s.items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            ),
+        {a.treatment ? (
+          <Block title="What to do">
+            <p className="leading-relaxed">{a.treatment}</p>
+          </Block>
+        ) : (
+          !a.healthy && (
+            <Block title="What to do">
+              <p>Ask your agrovet for treatment.</p>
+            </Block>
+          )
+        )}
+        {a.chemicals.length > 0 && (
+          <Block title="Registered active ingredients">
+            <p>
+              {a.chemicals.map((c) => c.activeIngredient).join(", ")}. Ask your agrovet for the right product and dose.
+            </p>
+          </Block>
+        )}
+        {a.prevention.length > 0 && (
+          <Block title="Prevention">
+            <ul className="list-disc space-y-0.5 pl-5 leading-relaxed">
+              {a.prevention.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+          </Block>
+        )}
+        {a.source && (
+          <p className="text-xs text-muted-foreground">
+            Source:{" "}
+            <a className="underline underline-offset-2" href={a.source.url} target="_blank" rel="noreferrer">
+              {a.source.title}
+            </a>
+          </p>
         )}
         <p className="text-xs text-muted-foreground">
           This is advice, not a guarantee. Ask your agrovet before spraying, especially if symptoms spread.
         </p>
       </div>
-
-      <Feedback scan={scan} onVerified={onVerified} />
     </div>
   );
 }
 
-function Feedback({ scan, onVerified }: { scan: ScanRow; onVerified: (s: ScanRow) => void }) {
+function Block({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</h3>
+      <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+function Feedback({ scanId, onVerified }: { scanId: string; onVerified: (s: ScanRow) => void }) {
   const [correcting, setCorrecting] = useState(false);
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
+  const [verified, setVerified] = useState(false);
 
   const send = async (correct: boolean) => {
     setBusy(true);
     try {
-      onVerified(await scansService.verify(scan.id, correct, correct ? undefined : label));
+      onVerified(await scansService.verify(scanId, correct, correct ? undefined : label));
+      setVerified(true);
     } catch {
       toast.error("Couldn't save your answer. Try again.");
     } finally {
@@ -261,7 +341,7 @@ function Feedback({ scan, onVerified }: { scan: ScanRow; onVerified: (s: ScanRow
 
   return (
     <div className="mt-6 border-t pt-4">
-      {scan.verifiedBy ? (
+      {verified ? (
         <p className="inline-flex items-center gap-1.5 text-sm text-status-healthy">
           <Check className="size-4" aria-hidden />
           Thanks. Your answer makes the next diagnosis better.

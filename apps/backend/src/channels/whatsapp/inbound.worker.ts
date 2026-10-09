@@ -1,6 +1,9 @@
 import { Worker, Job } from 'bullmq';
 import { redis } from '@farmassist/redis';
 import { WHATSAPP_INBOUND_QUEUE } from './inbound.queue';
+import { handleConversation, handleLanguage, languagePicker } from './conversation';
+import { sendMessages } from './sender';
+import { WORKER_VERSION } from './version';
 import { routeIntent } from './intent.router';
 import type { InboundJob } from './types';
 import * as farmerService from '../../services/farmer.service';
@@ -20,7 +23,7 @@ import type { ChannelEventType } from '../../services/channelEvent.service';
  * intents are recorded and left, deliberately, rather than half-answered.
  */
 
-export const WORKER_VERSION = 'inbound@1';
+export { WORKER_VERSION };
 
 /** Exported for tests: the whole job body, minus the queue plumbing. */
 export async function handleInboundJob(job: InboundJob): Promise<void> {
@@ -43,6 +46,9 @@ async function handleMessage(job: InboundJob): Promise<void> {
     return;
   }
 
+  // ponytail: two first messages arriving together can both see no channel and
+  // both offer the language picker; harmless, so no lock.
+  const firstContact = !(await farmerService.findChannelByPhone(message.from));
   // Creates the channel on first contact and advances lastInboundAt, which is
   // what reopens the 24-hour service window.
   const channel = await farmerService.touchChannel(message.from);
@@ -75,13 +81,14 @@ async function handleMessage(job: InboundJob): Promise<void> {
       return;
 
     case 'command.language':
-      if (intent.language) await farmerService.setLanguage(channel.id, intent.language);
+      await handleLanguage(channel, intent.language);
       return;
 
     default:
-      // Diagnosis, farm logging and replies arrive in later milestones. The
-      // event above is already recorded, so nothing is lost in the meantime.
-      console.log(`[whatsapp] ${intent.kind} from channel ${channel.id} recorded, no handler yet`);
+      await handleConversation(channel, intent, message.id);
+      // Replies default to English; a new farmer is offered Kiswahili once,
+      // after their first answer.
+      if (firstContact && !channel.optedOut) await sendMessages(channel, [languagePicker]);
       return;
   }
 }
@@ -119,6 +126,8 @@ function intentToEventType(kind: string): ChannelEventType {
       return 'message.audio';
     case 'message.text':
       return 'message.text';
+    case 'message.button':
+      return 'message.button';
     default:
       return 'message.unsupported';
   }

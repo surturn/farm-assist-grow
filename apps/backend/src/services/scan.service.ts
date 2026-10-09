@@ -1,6 +1,5 @@
 import { prisma } from '@farmassist/database';
-import { openaiVision, type Analysis } from '@farmassist/ai';
-import { saveScanImage } from './imageStore.service';
+import type { ScanOriginInput, ScanState, ScanWrite } from '../conversation/types';
 
 /**
  * Scan persistence. Two callers reach this: the REST controller, where a scan
@@ -27,7 +26,7 @@ export interface ScanResult {
   diseaseName?: string | null;
   confidence?: number | null;
   treatment?: string | null;
-  analysis?: Analysis | null;
+  analysis?: object | null;
   model?: string | null;
 }
 
@@ -105,30 +104,6 @@ export async function backfillChannelScansToUser(channelId: string, userId: stri
   return count;
 }
 
-/**
- * The one place a diagnosis is written. Every surface (dashboard now,
- * WhatsApp and Telegram later) calls this, so every diagnosis leaves a
- * training example: the stored image, the raw model output and the model id.
- * The image is stored before the model runs, so a failed call still keeps it.
- */
-export async function diagnoseAndRecord(
-  origin: ScanOrigin,
-  input: { farmId?: string | null; bytes: Buffer; mimeType: string }
-) {
-  const imageUrl = await saveScanImage(input.bytes, input.mimeType);
-  const { analysis, model } = await openaiVision.diagnose(input.bytes, input.mimeType);
-  const scan = await createScan(origin, {
-    farmId: input.farmId ?? null,
-    imageUrl,
-    diseaseName: analysis.diseaseName,
-    confidence: analysis.confidence,
-    treatment: analysis.treatment || null,
-    analysis,
-    model,
-  });
-  return { scan, analysis };
-}
-
 /** Returns null when the scan does not exist or is not the caller's. */
 export async function verifyScan(
   userId: string,
@@ -147,5 +122,56 @@ export async function verifyScan(
   return prisma.scan.update({
     where: { id: scanId },
     data: { verifiedLabel, verifiedBy: 'farmer' },
+  });
+}
+
+export async function createScanWith(origin: ScanOriginInput, data: ScanWrite) {
+  const fields = {
+    userId: origin.userId ?? null, channelId: origin.channelId ?? null, farmId: origin.farmId ?? null,
+    waMessageId: origin.waMessageId ?? null, mediaId: origin.mediaId ?? null, workerVersion: origin.workerVersion ?? null,
+    imageUrl: data.imageUrl ?? null, diseaseName: data.diseaseName, confidence: data.confidence,
+    analysis: data.analysis as any, model: data.model ?? null, answers: (data.answers ?? []) as any,
+    trace: data.trace as any, reviewStatus: data.reviewStatus,
+  };
+  if (!origin.waMessageId) return { ...(await prisma.scan.create({ data: fields, select: { id: true } })), created: true };
+  // Replayed WhatsApp delivery: report the scan already made for this message.
+  const existing = await findScanByMessage(origin.waMessageId);
+  if (existing) return { ...existing, created: false };
+  try {
+    return { ...(await prisma.scan.create({ data: fields, select: { id: true } })), created: true };
+  } catch (error: any) {
+    // Two deliveries of the same message can race past the lookup above.
+    if (error?.code === 'P2002') {
+      const scan = await findScanByMessage(origin.waMessageId);
+      if (scan) return { ...scan, created: false };
+    }
+    throw error;
+  }
+}
+
+export function findScanByMessage(waMessageId: string) {
+  return prisma.scan.findUnique({ where: { waMessageId }, select: { id: true } });
+}
+
+export async function getScanState(id: string): Promise<ScanState | null> {
+  const s = await prisma.scan.findUnique({ where: { id } });
+  if (!s) return null;
+  const a = (s.analysis ?? {}) as { probs?: Record<string, number>; crop?: string; pendingQuestion?: string | null };
+  return {
+    id: s.id, userId: s.userId, channelId: s.channelId, verifiedLabel: s.verifiedLabel,
+    probs: a.probs ?? null, crop: a.crop ?? null,
+    answers: (s.answers ?? []) as ScanState['answers'], pendingQuestion: a.pendingQuestion ?? null, trace: (s.trace ?? []) as any as ScanState['trace'],
+  };
+}
+
+export async function updateScanState(id: string, data: ScanWrite) {
+  const prev = await prisma.scan.findUnique({ where: { id }, select: { analysis: true } });
+  await prisma.scan.update({
+    where: { id },
+    data: {
+      diseaseName: data.diseaseName, confidence: data.confidence, reviewStatus: data.reviewStatus,
+      analysis: { ...((prev?.analysis as object) ?? {}), ...((data.analysis as object) ?? {}) } as any,
+      answers: (data.answers ?? undefined) as any, trace: data.trace as any,
+    },
   });
 }

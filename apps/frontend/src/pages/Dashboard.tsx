@@ -175,7 +175,7 @@ function ScanRowView({ scan, onChange }: { scan: ScanRow; onChange: () => void }
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
   const kind = scanStatus(scan);
-  const crop = scan.analysis?.cropType;
+  const crop = scan.analysis?.crop;
 
   const answer = async (correct: boolean) => {
     setBusy(true);
@@ -204,7 +204,7 @@ function ScanRowView({ scan, onChange }: { scan: ScanRow; onChange: () => void }
         <StatusBadge kind={kind} className="mt-1.5 md:hidden" />
       </td>
       <td className="hidden px-4 py-3 sm:table-cell">
-        {kind === "unsupported" || scan.confidence == null ? (
+        {kind === "unsupported" || kind === "uncertain" || scan.confidence == null ? (
           <span className="text-muted-foreground">—</span>
         ) : (
           <span className="tabular">{Math.round(scan.confidence)}%</span>
@@ -222,7 +222,7 @@ function ScanRowView({ scan, onChange }: { scan: ScanRow; onChange: () => void }
             <Check className="size-3.5" aria-hidden />
             {scan.verifiedLabel === scan.diseaseName ? "Confirmed" : `Corrected: ${scan.verifiedLabel}`}
           </span>
-        ) : kind === "unsupported" ? (
+        ) : kind !== "disease" && kind !== "healthy" ? (
           <span className="text-muted-foreground">—</span>
         ) : correcting ? (
           <form
