@@ -15,7 +15,7 @@
         "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\""
     },
     "devDependencies": {
-        "concurrently": "^9.2.1"
+        "concurrently": "^9.2.5"
     },
     "repository": {
         "type": "git",
