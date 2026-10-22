@@ -1,9 +1,9 @@
 import type { Lang } from '@farmassist/ai/advice';
-import { answerQuestion, startDiagnosis } from '../../conversation/diagnosis';
+import { answerQuestion, getDetails, startDiagnosis } from '../../conversation/diagnosis';
 import { realDeps } from '../../conversation/deps';
 import { checkImage } from '../../conversation/filter';
 import { t } from '../../conversation/i18n';
-import { checkFaithful, parseAnswerButtonId, renderStep } from '../../conversation/render';
+import { checkFaithful, parseAnswerButtonId, parseDetailsButtonId, renderDetails, renderStep } from '../../conversation/render';
 import { DuplicateMessageError, StaleAnswerError, type OutboundMessage } from '../../conversation/types';
 import { downloadMedia, MediaTooLargeError } from './graph';
 import type { Intent } from './intent.router';
@@ -51,6 +51,19 @@ export async function handleConversation(channel: Channel, intent: Intent, waMes
       return void (await reply(safe(renderStep(step, lang, deps.manifest.trainedCrops), step, lang)));
     }
     if (intent.kind === 'message.button') {
+      const details = parseDetailsButtonId(intent.id);
+      if (details) {
+        try {
+          const advice = await getDetails(deps, { channelId: channel.id }, details.scanId, lang);
+          const messages = renderDetails(advice, details.section, lang);
+          const violations = checkFaithful(messages, { advice });
+          if (violations.length) throw new Error(`unfaithful details: ${violations.join(', ')}`);
+          return void (await reply(messages));
+        } catch (e) {
+          if (e instanceof StaleAnswerError) return void (await reply([{ text: t('details.stale', lang) }]));
+          throw e;
+        }
+      }
       const parsed = parseAnswerButtonId(intent.id);
       if (!parsed) return void (await reply([{ text: t('answer.stale', lang) }]));
       const step = await answerQuestion(deps, { channelId: channel.id }, parsed.scanId, parsed.questionId, parsed.optionId, lang);

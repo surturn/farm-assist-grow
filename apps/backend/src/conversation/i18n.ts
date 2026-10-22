@@ -1,19 +1,22 @@
 import type { Lang } from '@farmassist/ai/advice';
 
 export const CATALOG = {
-  'diagnosis.result': { en: '{disease} ({crop}), {confidence}% sure.', sw: '{disease} ({crop}), uhakika {confidence}%.' },
+  'diagnosis.short': { en: 'Your {crop} has {name} ({confidence}% sure).', sw: '{crop} yako ina {name} (uhakika {confidence}%).' },
+  'button.details': { en: 'More details', sw: 'Maelezo zaidi' },
+  'button.prevent': { en: 'How to prevent', sw: 'Jinsi ya kuzuia' },
+  'details.stale': { en: 'Those details are no longer available. Send the photo again.', sw: 'Maelezo hayo hayapatikani tena. Tuma picha tena.' },
   'diagnosis.healthy': { en: 'Your {crop} looks healthy.', sw: '{crop} yako inaonekana na afya.' },
-  'diagnosis.symptoms': { en: 'Signs: {list}', sw: 'Dalili: {list}' },
+  'diagnosis.symptoms': { en: 'Signs:{list}', sw: 'Dalili:{list}' },
   'diagnosis.treatment': { en: 'What to do: {text}', sw: 'Cha kufanya: {text}' },
-  'diagnosis.prevention': { en: 'Prevent it: {list}', sw: 'Kuzuia: {list}' },
+  'diagnosis.prevention': { en: 'How to prevent it:{list}', sw: 'Jinsi ya kuzuia:{list}' },
   'diagnosis.chemicals': {
     en: 'Registered products contain: {list}. Ask your agrovet for the right product and dose.',
     sw: 'Bidhaa zilizosajiliwa zina: {list}. Muulize mwuzaji wa pembejeo (agrovet) bidhaa na kipimo sahihi.',
   },
   'diagnosis.no_advice': { en: 'Ask your agrovet for treatment.', sw: 'Muulize agrovet wako kuhusu tiba.' },
   'diagnosis.footer': {
-    en: 'This is advice, not a guarantee. Consult an agrovet if symptoms spread.',
-    sw: 'Huu ni ushauri, si uhakika. Wasiliana na agrovet dalili zikienea.',
+    en: 'This is advice, not a guarantee. Ask your agrovet if it spreads.',
+    sw: 'Huu ni ushauri, si uhakika. Muulize muuzaji wa pembejeo ugonjwa ukienea.',
   },
   'diagnosis.uncertain': {
     en: "I'm not sure what this is. An expert will check your photo.",

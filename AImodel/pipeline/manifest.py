@@ -142,7 +142,7 @@ def check_knowledge(manifest: Manifest, knowledge: dict) -> list[str]:
             errors.append(f"{label}: cropType {entry.get('cropType')!r} != {crop_of(label)!r}")
         if "severity" in entry:
             errors.append(f"{label}: severity must not be stored (model does not assess it)")
-        text = json.dumps({k: entry.get(k) for k in ("symptoms", "possibleCauses", "treatment", "prevention", "sw", "chemicals")})
+        text = json.dumps({k: entry.get(k) for k in ("symptoms", "possibleCauses", "treatment", "prevention", "sw", "chemicals", "short")})
         m = DOSAGE_RE.search(text)
         if m:
             errors.append(f"{label}: looks like a dosage ({m.group(0)!r}); defer quantities to extension services")

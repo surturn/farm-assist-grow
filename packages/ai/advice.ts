@@ -1,4 +1,4 @@
-import { diseaseOf, type Chemical, type KnowledgeEntry, type KnowledgeSource } from './manifest';
+import { diseaseOf, type Chemical, type KnowledgeEntry, type KnowledgeShort, type KnowledgeSource } from './manifest';
 
 export type Lang = 'en' | 'sw';
 
@@ -11,6 +11,8 @@ export interface AdviceView {
     chemicals: Chemical[];
     source: KnowledgeSource | null;
     healthy: boolean;
+    /** Plain name, and an action only when sourced; the short reply falls back to diseaseName. */
+    short: { name: string; action: string | null } | null;
 }
 
 /**
@@ -33,5 +35,8 @@ export function getAdvice(label: string, lang: Lang, knowledge: Record<string, K
         chemicals: sourced && !healthy ? e.chemicals.filter((c) => c.pcpbReg.trim()) : [],
         source: e.source,
         healthy,
+        short: shortView(lang === 'sw' ? e.sw?.short : e.short, sourced && !healthy),
     };
 }
+
+const shortView = (s: KnowledgeShort | undefined, mayAct: boolean) => (s ? { name: s.name, action: mayAct ? s.action : null } : null);

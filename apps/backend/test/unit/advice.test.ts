@@ -59,3 +59,12 @@ test('unregistered chemicals (blank pcpbReg) are filtered out', () => {
 test('unknown label throws (manifest/KB drift is a bug, not a reply)', () => {
   assert.throws(() => getAdvice('Tomato___Wilt', 'en', {}));
 });
+
+test('the short action is advice: only sent for a sourced, non-Healthy entry', () => {
+  const short = { name: 'late blight', action: 'Pull out sick plants.' };
+  assert.deepEqual(getAdvice('Tomato___Late_Blight', 'en', { Tomato___Late_Blight: { ...base, short } }).short, { name: 'late blight', action: null });
+  assert.deepEqual(getAdvice('Tomato___Late_Blight', 'en', { Tomato___Late_Blight: { ...sourced, short } }).short, short);
+  const sw = { ...sourced, short, sw: { ...sourced.sw!, short: { name: 'baa chelewa', action: 'Ng\'oa mimea.' } } };
+  assert.deepEqual(getAdvice('Tomato___Late_Blight', 'sw', { Tomato___Late_Blight: sw }).short, { name: 'baa chelewa', action: 'Ng\'oa mimea.' });
+  assert.equal(getAdvice('Tomato___Healthy', 'en', { Tomato___Healthy: { ...healthy, short } }).short?.action, null);
+});

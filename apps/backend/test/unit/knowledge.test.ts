@@ -62,3 +62,15 @@ test('a source URL must be https', () => {
   e.sw = { diseaseName: 'a', symptoms: [], treatment: 'b', prevention: [] };
   assert.match(checkManifestAndKnowledge(manifest, k).join('\n'), /source url must be https/);
 });
+
+test('a sourced disease entry without a short name and action in both languages fails', () => {
+  const k = fresh();
+  delete k['Tomato___Late_Blight'].sw.short;
+  assert.match(checkManifestAndKnowledge(manifest, k).join('\n'), /Tomato___Late_Blight: sourced entry needs a short name and action/);
+});
+
+test('a dose in the short action fails', () => {
+  const k = fresh();
+  k['Tomato___Late_Blight'].short.action = 'Spray 50 ml per knapsack.';
+  assert.match(checkManifestAndKnowledge(manifest, k).join('\n'), /looks like a dosage/);
+});
